@@ -98,6 +98,15 @@ button:hover { background: #1a452b; transform: translateY(-2px); }
 table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.85rem; }
 th { background: var(--primary); color: white; padding: 10px; }
 td { border-bottom: 1px solid #eee; padding: 10px; }
+
+  select option[value=""] {
+    color: #888;
+}
+
+/* Si el select queda en "Sin disponibilidad", se pone en rojo suave */
+#reserva-cancha:has(option[value=""]) {
+    border-color: #ffcccc;
+}
 </style>
 </head>
 
@@ -304,7 +313,7 @@ document.getElementById('reserva-fecha').setAttribute('min', hoy);
     cargarCanchas();
   }
 
- async function cargarCanchas() {
+async function cargarCanchas() {
     const fecha = document.getElementById('reserva-fecha').value;
     const horaInicio = parseInt(document.getElementById('reserva-hora').value);
     const duracionReserva = parseInt(document.getElementById('reserva-duracion').value);
@@ -312,40 +321,43 @@ document.getElementById('reserva-fecha').setAttribute('min', hoy);
     
     if(!fecha || isNaN(horaInicio)) return;
 
-    // Traer reservas existentes desde el servidor
+    // Llamada a la API para ver qué hay ocupado
     const ocupadas = await llamarAPI('obtenerDisponibilidad', { fechaStr: fecha });
     const select = document.getElementById('reserva-cancha');
-    select.innerHTML = '<option value="">-- Seleccione Cancha --</option>';
+    
+    // Limpiamos el select y ponemos un estado de carga
+    select.innerHTML = '<option value="">-- Verificando disponibilidad... --</option>';
     
     const dia = new Date(fecha + 'T00:00:00').getDay();
-    // Definir límite de canchas según el día (Sáb/Dom=6, resto=2)
     let limiteCanchas = (dia === 0 || dia === 6) ? 6 : 2;
 
-    for (let i = 1; i <= limiteCanchas; i++) {
-        // Lógica de colisión de horarios
-        let estaOcupada = ocupadas?.some(r => {
-            if (parseInt(r.cancha) !== i) return false; // Si es otra cancha, no hay conflicto
-            
-            let rHoraInicio = parseInt(r.hora);
-            let rDuracion = parseInt(r.duracion || 1); // Por defecto 1h si no viene el dato
-            let rHoraFin = rHoraInicio + rDuracion;
+    let opcionesEncontradas = 0;
+    let htmlOpciones = '<option value="">-- Seleccione Cancha --</option>';
 
-            // Hay conflicto si el nuevo turno empieza antes de que termine el anterior
-            // Y termina después de que empezó el anterior
+    for (let i = 1; i <= limiteCanchas; i++) {
+        let estaOcupada = ocupadas?.some(r => {
+            if (parseInt(r.cancha) !== i) return false;
+            let rHoraInicio = parseInt(r.hora);
+            let rDuracion = parseInt(r.duracion || 1);
+            let rHoraFin = rHoraInicio + rDuracion;
             return (horaInicio < rHoraFin && horaFin > rHoraInicio);
         });
 
         if (!estaOcupada) {
-            let opt = document.createElement('option');
-            opt.value = i;
-            opt.text = "Cancha " + i;
-            select.appendChild(opt);
+            htmlOpciones += `<option value="${i}">Cancha ${i}</option>`;
+            opcionesEncontradas++;
         }
     }
 
-    if (select.options.length === 1) {
-        select.innerHTML = "<option>No hay canchas disponibles</option>";
+    // EL AVISO: Si no hay opciones, mostramos alerta y limpiamos el select
+    if (opcionesEncontradas === 0) {
+        alert("⚠️ Lo sentimos, no hay canchas disponibles para el horario y duración seleccionados. Por favor, intente con otra hora u otro día.");
+        select.innerHTML = "<option value=''>❌ Sin disponibilidad</option>";
+        // Opcional: limpiar el botón de confirmación para que no sigan
+        return;
     }
+
+    select.innerHTML = htmlOpciones;
 }
 
   function generarCamposJugadores() {
