@@ -132,8 +132,10 @@ td { border-bottom: 1px solid #eee; padding: 10px; }
   <div id="view-booking" class="hidden">
     <h2 id="welcome-msg">Hola Socio</h2>
     
-    <label>Fecha de Reserva</label>
-    <input type="date" id="reserva-fecha" onchange="cargarConfiguracionDia()">
+<label>Fecha de Reserva</label>
+<input type="date" id="reserva-fecha" 
+       onchange="validarLunes(this); cargarConfiguracionDia();" 
+       onkeydown="return false">
     
     <div id="config-area" class="hidden">
       <div style="display:flex; gap:10px;">
@@ -232,7 +234,18 @@ td { border-bottom: 1px solid #eee; padding: 10px; }
       if (v.match(/^\d{2}$/) !== null) this.value = v + '/';
       else if (v.match(/^\d{2}\/\d{2}$/) !== null) this.value = v + '/';
     }
-  });
+  }); 
+
+  function validarLunes(input) {
+  const fechaSeleccionada = new Date(input.value + 'T00:00:00');
+  const diaSemana = fechaSeleccionada.getDay(); // 0 es Domingo, 1 es Lunes
+
+  if (diaSemana === 1) {
+    alert("📌 El club permanece cerrado los días lunes por mantenimiento. Por favor, seleccione otro día.");
+    input.value = ""; // Borra la fecha seleccionada
+    document.getElementById('config-area').classList.add('hidden'); // Oculta las opciones de reserva
+  }
+}
 
   const API_URL = "https://script.google.com/macros/s/AKfycbxaAz1Z1PKwIyiyDV_WCT1qhHC_ALdsgpqH0U0Xf1oeWFHYHISjK5unJtyCtSYISMu7/exec"; 
 
@@ -268,6 +281,9 @@ td { border-bottom: 1px solid #eee; padding: 10px; }
         document.getElementById('welcome-msg').innerText = "Hola, " + res.nombre;
         inicializarHoras();
     } else { alert("Datos incorrectos"); }
+    // Dentro de la función validarUsuario(), después de mostrar view-booking:
+const hoy = new Date().toISOString().split('T')[0];
+document.getElementById('reserva-fecha').setAttribute('min', hoy);
   }
 
   function inicializarHoras() {
