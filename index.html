@@ -288,24 +288,49 @@ td { border-bottom: 1px solid #eee; padding: 10px; }
     cargarCanchas();
   }
 
-  async function cargarCanchas() {
+ async function cargarCanchas() {
     const fecha = document.getElementById('reserva-fecha').value;
-    const hora = document.getElementById('reserva-hora').value;
-    const duracion = document.getElementById('reserva-duracion').value;
+    const horaInicio = parseInt(document.getElementById('reserva-hora').value);
+    const duracionReserva = parseInt(document.getElementById('reserva-duracion').value);
+    const horaFin = horaInicio + duracionReserva;
+    
+    if(!fecha || isNaN(horaInicio)) return;
+
+    // Traer reservas existentes desde el servidor
     const ocupadas = await llamarAPI('obtenerDisponibilidad', { fechaStr: fecha });
     const select = document.getElementById('reserva-cancha');
-    select.innerHTML = "";
-    let dia = new Date(fecha + 'T00:00:00').getDay();
-    let limite = (dia === 0 || dia === 6) ? 6 : 2;
-    for(let i=1; i<=limite; i++) {
-      let ocupada = ocupadas?.some(r => r.cancha == i && Math.max(r.hora, hora) < Math.min(parseInt(r.hora)+parseInt(r.duracion), parseInt(hora)+parseInt(duracion)));
-      if(!ocupada) {
-        let opt = document.createElement('option');
-        opt.value = i; opt.text = "Cancha " + i;
-        select.appendChild(opt);
-      }
+    select.innerHTML = '<option value="">-- Seleccione Cancha --</option>';
+    
+    const dia = new Date(fecha + 'T00:00:00').getDay();
+    // Definir límite de canchas según el día (Sáb/Dom=6, resto=2)
+    let limiteCanchas = (dia === 0 || dia === 6) ? 6 : 2;
+
+    for (let i = 1; i <= limiteCanchas; i++) {
+        // Lógica de colisión de horarios
+        let estaOcupada = ocupadas?.some(r => {
+            if (parseInt(r.cancha) !== i) return false; // Si es otra cancha, no hay conflicto
+            
+            let rHoraInicio = parseInt(r.hora);
+            let rDuracion = parseInt(r.duracion || 1); // Por defecto 1h si no viene el dato
+            let rHoraFin = rHoraInicio + rDuracion;
+
+            // Hay conflicto si el nuevo turno empieza antes de que termine el anterior
+            // Y termina después de que empezó el anterior
+            return (horaInicio < rHoraFin && horaFin > rHoraInicio);
+        });
+
+        if (!estaOcupada) {
+            let opt = document.createElement('option');
+            opt.value = i;
+            opt.text = "Cancha " + i;
+            select.appendChild(opt);
+        }
     }
-  }
+
+    if (select.options.length === 1) {
+        select.innerHTML = "<option>No hay canchas disponibles</option>";
+    }
+}
 
   function generarCamposJugadores() {
     const tipo = document.getElementById('reserva-tipo').value;
