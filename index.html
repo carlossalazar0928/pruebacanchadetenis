@@ -146,6 +146,34 @@ td { border-bottom: 1px solid #eee; padding: 10px; color: #333; }
 }
 
 .hidden { display: none !important; }
+
+  .admin-access-container {
+  margin-top: 25px;
+  border-top: 1px solid #eee;
+  padding-top: 15px;
+  text-align: center;
+}
+
+.btn-admin {
+  background: none !important;
+  color: #999 !important;
+  border: none !important;
+  padding: 5px !important;
+  margin: 0 !important;
+  font-size: 0.75rem !important;
+  font-weight: 400 !important;
+  text-transform: none !important;
+  cursor: pointer;
+  letter-spacing: 0;
+  width: auto !important;
+}
+
+.btn-admin:hover {
+  color: var(--primary) !important;
+  text-decoration: underline;
+  transform: none !important;
+  box-shadow: none !important;
+}
 </style>
 </head>
 
@@ -170,12 +198,14 @@ td { border-bottom: 1px solid #eee; padding: 10px; color: #333; }
     <input type="text" id="login-fecha" placeholder="DD/MM/AAAA" maxlength="10">
     <small style="color:#888;">Formato automático al escribir.</small>
     
-    <button onclick="validarUsuario()">Ingresar al Sistema</button>
-    
-    <div style="text-align:center; margin-top:20px;">
-        <a href="#" onclick="showAdminLogin()" style="color:#999; text-decoration:none; font-size:0.8rem;">Acceso Administrador</a>
-    </div>
+<button onclick="validarUsuario()">Ingresar al Sistema</button>
+
+  <div class="admin-access-container">
+      <button onclick="showAdminLogin()" class="btn-admin">
+        🔒 Acceso Administración
+      </button>
   </div>
+</div
 
   <div id="view-booking" class="hidden">
     <h2 id="welcome-msg">Hola Socio</h2>
@@ -445,6 +475,29 @@ async function llamarAPI(accion, datos = {}) {
       alert("Error al guardar reserva. Intente nuevamente.");
     }
   }
+  function showAdminLogin() {
+  // Usamos un pequeño retraso para asegurar que el navegador procese el clic
+  setTimeout(() => {
+    let pass = prompt("🔐 Ingrese la clave de administración:");
+    
+    if (pass === null) return; // Si cancela, no hace nada
+
+    if (pass === "admin123") { 
+      // Ocultamos todas las vistas por seguridad
+      document.getElementById('view-login').classList.add('hidden');
+      document.getElementById('view-booking').classList.add('hidden');
+      document.getElementById('view-success').classList.add('hidden');
+      
+      // Mostramos el panel admin
+      document.getElementById('view-admin').classList.remove('hidden');
+      
+      // Cargamos los datos
+      cargarAdmin();
+    } else {
+      alert("❌ Contraseña incorrecta");
+    }
+  }, 100);
+}
 </script>
 </body>
 </html>
