@@ -336,48 +336,73 @@ td { border-bottom: 1px solid #eee; padding: 10px; color: #333; }
     return total;
   }
 
-  async function enviarReserva() {
+ async function enviarReserva() {
     const cancha = document.getElementById('reserva-cancha').value;
-    if(!cancha || isNaN(cancha)) return alert("Seleccione cancha");
+    if(!cancha || isNaN(cancha)) return alert("Seleccione una cancha válida.");
+
+    // Capturar datos básicos
+    const fecha = document.getElementById('reserva-fecha').value;
+    const hora = document.getElementById('reserva-hora').value;
+    const duracion = document.getElementById('reserva-duracion').value;
+    const total = calcularPrecio();
+
+    // RECOPILAR JUGADORES (Titular + Invitados)
+    let detalleJugadores = `${usuarioActual.nombre} (Titular)`;
+    const inputsJugadores = document.getElementsByClassName('dato-jugador');
+    for(let inp of inputsJugadores) {
+      if(inp.value.trim() !== "") {
+        detalleJugadores += `, ${inp.value.trim()}`;
+      }
+    }
 
     const datos = {
-      fecha: document.getElementById('reserva-fecha').value,
-      hora: document.getElementById('reserva-hora').value,
-      duracion: document.getElementById('reserva-duracion').value,
+      fecha: fecha,
+      hora: hora,
+      duracion: duracion,
       cancha: cancha,
       socioTitular: usuarioActual.id,
-      total: calcularPrecio()
+      detalleJugadores: detalleJugadores,
+      total: total
     };
 
     const res = await llamarAPI('guardarReserva', { datos });
+    
     if(res?.success) {
       document.getElementById('view-booking').classList.add('hidden');
       document.getElementById('view-success').classList.remove('hidden');
-      document.getElementById('resumen-final').innerHTML = `<p>Fecha: ${datos.fecha}</p><p>Cancha: ${datos.cancha}</p><p>Total: $${datos.total}</p>`;
-    }
-  }
+      
+      // CONFIGURACIÓN DEL MENSAJE Y NÚMERO
+      const nroCasilla = "5491130351121";
+      const mensajeWA = `🎾 *RESERVA DE TENIS*%0A` +
+                        `*CLUB ASTURIANO*%0A%0A` +
+                        `👤 *Titular:* ${usuarioActual.nombre}%0A` +
+                        `📅 *Fecha:* ${fecha}%0A` +
+                        `⏰ *Hora:* ${hora}:00 hs (${duracion}h)%0A` +
+                        `🏟️ *Cancha:* ${cancha}%0A` +
+                        `👥 *Jugadores:* ${detalleJugadores}%0A` +
+                        `💰 *Total a Pagar:* $${total}%0A%0A` +
+                        `_Enviado desde el Sistema de Reservas._`;
 
-  function showAdminLogin() {
-    if(prompt("Clave:") === "admin123") {
-      document.getElementById('view-login').classList.add('hidden');
-      document.getElementById('view-admin').classList.remove('hidden');
-      cargarAdmin();
-    }
-  }
+      // Generar URL directa al chat de la casilla
+      const urlWA = `https://wa.me/${nroCasilla}?text=${mensajeWA}`;
 
-  async function cargarAdmin() {
-    const res = await llamarAPI('obtenerReservasAdmin');
-    const tbody = document.querySelector('#admin-table tbody');
-    tbody.innerHTML = "";
-    res?.forEach((r, i) => {
-      tbody.innerHTML += `<tr><td>${r[1]} ${r[2]}h</td><td>${r[4]}</td><td>${r[6]}</td><td class="${r[9]=='Pagado'?'status-pagado':'status-pendiente'}">${r[9]}</td><td>${r[9]!='Pagado'?'<button onclick="cobrar('+i+')">$</button>':'-'}</td></tr>`;
-    });
-  }
-
-  async function cobrar(i) {
-    if(confirm("¿Cobrar?")) {
-      await llamarAPI('actualizarPago', { index: i, cobrador: "Admin" });
-      cargarAdmin();
+      document.getElementById('resumen-final').innerHTML = `
+        <div style="text-align:left; font-size:0.9rem;">
+          <p><strong>Titular:</strong> ${usuarioActual.nombre}</p>
+          <p><strong>Fecha:</strong> ${fecha}</p>
+          <p><strong>Cancha:</strong> ${cancha} (${hora}:00 hs)</p>
+          <p style="font-size:1.1rem; color:var(--primary);"><strong>Total: $${total}</strong></p>
+        </div>
+        <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
+        <p style="font-size:0.85rem; color:#444; margin-bottom:12px;">
+          Para completar el proceso, envíe el comprobante a la casilla del club:
+        </p>
+        <a href="${urlWA}" target="_blank" style="display:block; background:#25d366; color:white; text-decoration:none; padding:15px; border-radius:8px; font-weight:bold; text-align:center; box-shadow: 0 4px 12px rgba(37,211,102,0.4); text-transform:uppercase; letter-spacing:1px;">
+          📲 Enviar a la Casilla
+        </a>
+      `;
+    } else {
+      alert("Error al guardar reserva. Intente nuevamente.");
     }
   }
 </script>
