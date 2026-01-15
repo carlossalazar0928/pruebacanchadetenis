@@ -112,21 +112,50 @@ th { background: var(--primary); color: white; padding: 10px; }
 td { border-bottom: 1px solid #eee; padding: 10px; color: #333; }
 .status-pagado { color: green; font-weight: bold; }
 .status-pendiente { color: #e67e22; font-weight: bold; }
+
+  #loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(5px); /* Desenfoque de fondo */
+  z-index: 99999; /* Por encima de todo */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.loader-content {
+  text-align: center;
+}
+
+.loader-content img {
+  width: 120px; /* Tamaño de la pelota */
+  height: auto;
+  margin-bottom: 15px;
+}
+
+.loader-content p {
+  color: #235d3a;
+  font-weight: 900;
+  letter-spacing: 2px;
+  font-family: 'Lato', sans-serif;
+  margin: 0;
+}
+
+.hidden { display: none !important; }
 </style>
 </head>
 
 <body>
 
 <div id="loading" class="hidden">
-  <dotlottie-player 
-    src="https://lottie.host/5a49479e-43f1-419b-a010-891461994348/XpL5VzC6gM.json" 
-    background="transparent" 
-    speed="1" 
-    style="width: 200px; height: 200px;" 
-    loop 
-    autoplay>
-  </dotlottie-player>
-  <p style="color: #235d3a; font-weight: 900; margin-top: -20px; font-family: 'Lato', sans-serif;">PROCESANDO...</p>
+  <div class="loader-content">
+    <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJmZzRyeHpsYm1ycXp4amx3bmZ6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKMGpxx66He1J9m/giphy.gif" alt="Cargando...">
+    <p>PROCESANDO...</p>
+  </div>
 </div>
 
 <div class="container">
@@ -229,23 +258,29 @@ td { border-bottom: 1px solid #eee; padding: 10px; color: #333; }
 
   const API_URL = "https://script.google.com/macros/s/AKfycbxaAz1Z1PKwIyiyDV_WCT1qhHC_ALdsgpqH0U0Xf1oeWFHYHISjK5unJtyCtSYISMu7/exec"; 
 
-  async function llamarAPI(accion, datos = {}) {
-    const loader = document.getElementById('loading');
-    loader.classList.remove('hidden');
-    try {
-      const response = await fetch(API_URL, {
-        method: "POST",
-        body: JSON.stringify({ action: accion, ...datos })
-      });
-      const resultado = await response.json();
-      loader.classList.add('hidden');
-      return resultado;
-    } catch (error) {
-      loader.classList.add('hidden');
-      alert("Error de conexión con el servidor.");
-      return null;
-    }
+async function llamarAPI(accion, datos = {}) {
+  const loader = document.getElementById('loading');
+  
+  // 1. Mostrar la pelota antes de la petición
+  loader.classList.remove('hidden');
+
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify({ action: accion, ...datos })
+    });
+    const resultado = await response.json();
+    
+    // 2. Ocultar la pelota cuando llega la respuesta
+    loader.classList.add('hidden');
+    return resultado;
+  } catch (error) {
+    // 3. Ocultar si hay error para no bloquear la pantalla
+    loader.classList.add('hidden');
+    console.error("Error:", error);
+    return null;
   }
+}
 
   let usuarioActual = "";
 
