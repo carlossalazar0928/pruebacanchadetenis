@@ -245,14 +245,18 @@ td { border-bottom: 1px solid #eee; padding: 10px; }
     }
   }); 
 
-  function validarLunes(input) {
+// 1. Bloqueo de Lunes y Fecha Mínima
+function validarLunes(input) {
+  const hoy = new Date().toISOString().split('T')[0];
+  input.setAttribute('min', hoy); // Evita fechas pasadas
+
   const fechaSeleccionada = new Date(input.value + 'T00:00:00');
-  const diaSemana = fechaSeleccionada.getDay(); // 0 es Domingo, 1 es Lunes
+  const diaSemana = fechaSeleccionada.getDay(); // 1 es Lunes
 
   if (diaSemana === 1) {
     alert("📌 El club permanece cerrado los días lunes por mantenimiento. Por favor, seleccione otro día.");
-    input.value = ""; // Borra la fecha seleccionada
-    document.getElementById('config-area').classList.add('hidden'); // Oculta las opciones de reserva
+    input.value = "";
+    document.getElementById('config-area').classList.add('hidden');
   }
 }
 
@@ -313,6 +317,7 @@ document.getElementById('reserva-fecha').setAttribute('min', hoy);
     cargarCanchas();
   }
 
+// 2. Carga de Canchas con Alerta de No Disponibilidad
 async function cargarCanchas() {
     const fecha = document.getElementById('reserva-fecha').value;
     const horaInicio = parseInt(document.getElementById('reserva-hora').value);
@@ -321,12 +326,10 @@ async function cargarCanchas() {
     
     if(!fecha || isNaN(horaInicio)) return;
 
-    // Llamada a la API para ver qué hay ocupado
     const ocupadas = await llamarAPI('obtenerDisponibilidad', { fechaStr: fecha });
     const select = document.getElementById('reserva-cancha');
     
-    // Limpiamos el select y ponemos un estado de carga
-    select.innerHTML = '<option value="">-- Verificando disponibilidad... --</option>';
+    select.innerHTML = '<option value="">-- Verificando... --</option>';
     
     const dia = new Date(fecha + 'T00:00:00').getDay();
     let limiteCanchas = (dia === 0 || dia === 6) ? 6 : 2;
@@ -337,10 +340,8 @@ async function cargarCanchas() {
     for (let i = 1; i <= limiteCanchas; i++) {
         let estaOcupada = ocupadas?.some(r => {
             if (parseInt(r.cancha) !== i) return false;
-            let rHoraInicio = parseInt(r.hora);
-            let rDuracion = parseInt(r.duracion || 1);
-            let rHoraFin = rHoraInicio + rDuracion;
-            return (horaInicio < rHoraFin && horaFin > rHoraInicio);
+            let rHoraFin = parseInt(r.hora) + parseInt(r.duracion || 1);
+            return (horaInicio < rHoraFin && horaFin > parseInt(r.hora));
         });
 
         if (!estaOcupada) {
@@ -349,15 +350,12 @@ async function cargarCanchas() {
         }
     }
 
-    // EL AVISO: Si no hay opciones, mostramos alerta y limpiamos el select
     if (opcionesEncontradas === 0) {
-        alert("⚠️ Lo sentimos, no hay canchas disponibles para el horario y duración seleccionados. Por favor, intente con otra hora u otro día.");
+        alert("⚠️ No hay canchas disponibles para este horario/duración. Por favor, elija otra hora.");
         select.innerHTML = "<option value=''>❌ Sin disponibilidad</option>";
-        // Opcional: limpiar el botón de confirmación para que no sigan
-        return;
+    } else {
+        select.innerHTML = htmlOpciones;
     }
-
-    select.innerHTML = htmlOpciones;
 }
 
   function generarCamposJugadores() {
