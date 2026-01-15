@@ -5,34 +5,28 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Reserva de Tenis - Club Asturiano</title>
   <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/@dotlottie/player-component@latest/dist/dotlottie-player.mjs" type="module"></script>
 
 <style>
 /* ==================== CONFIGURACIÓN VISUAL ==================== */
 :root {
-  --primary: #235d3a; /* Verde Club */
-  --accent: #d2e603;  /* Amarillo Pelota */
+  --primary: #235d3a;
+  --accent: #d2e603;
   --white: #ffffff;
   --logo-url: url('https://i.ibb.co/fzKg4fGZ/logo-2.jpg'); 
 }
 
 body {
-  margin: 0;
-  padding: 0;
+  margin: 0; padding: 0;
   font-family: 'Lato', sans-serif;
   background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), 
               url('https://i.ibb.co/qFWNMRJw/20241127095946-pelota.jpg') center/cover no-repeat fixed;
   min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  display: flex; justify-content: center; align-items: center;
 }
 
-/* ==================== TARJETA PRINCIPAL ==================== */
 .container {
   background: var(--white);
-  width: 90%;
-  max-width: 420px;
+  width: 90%; max-width: 420px;
   padding: 70px 30px 35px 30px;
   border-radius: 15px;
   box-shadow: 0 25px 50px rgba(0,0,0,0.5);
@@ -40,15 +34,11 @@ body {
   box-sizing: border-box;
 }
 
-/* LOGO CIRCULAR FLOTANTE */
 .container::before {
   content: '';
-  position: absolute;
-  top: -55px;
-  left: 50%;
+  position: absolute; top: -55px; left: 50%;
   transform: translateX(-50%);
-  width: 110px;
-  height: 110px;
+  width: 110px; height: 110px;
   background: var(--white) var(--logo-url) center/cover no-repeat;
   border-radius: 50%;
   box-shadow: 0 10px 20px rgba(0,0,0,0.3);
@@ -56,137 +46,58 @@ body {
   z-index: 10;
 }
 
-/* ELEMENTOS DE TEXTO */
 h1, h2 { color: var(--primary); text-align: center; margin-top: 10px; font-weight: 900; font-size: 1.4rem; }
 p { color: #555; text-align: center; font-size: 0.9rem; margin-bottom: 20px; }
 label { display: block; font-weight: 700; font-size: 0.8rem; color: var(--primary); text-transform: uppercase; margin-top: 15px; margin-bottom: 5px; }
 
 input, select {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background: #f9f9f9;
-  font-size: 1rem;
-  box-sizing: border-box;
-  transition: 0.3s;
+  width: 100%; padding: 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  background: #f9f9f9; font-size: 1rem;
+  box-sizing: border-box; transition: 0.3s;
 }
 
-input:focus { outline: none; border-color: var(--primary); background: #fff; }
-
-/* BOTÓN PRINCIPAL */
 button {
-  width: 100%;
-  padding: 15px;
-  margin-top: 25px;
-  background: var(--primary);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-weight: 700;
-  text-transform: uppercase;
-  cursor: pointer;
-  letter-spacing: 1px;
-  transition: 0.3s;
+  width: 100%; padding: 15px; margin-top: 25px;
+  background: var(--primary); color: white;
+  border: none; border-radius: 8px;
+  font-weight: 700; text-transform: uppercase;
+  cursor: pointer; letter-spacing: 1px; transition: 0.3s;
 }
 
 button:hover { background: #1a452b; transform: translateY(-2px); }
 
-/* CARGADOR (PANTALLA COMPLETA) */
+/* CARGADOR */
 #loading {
-  position: fixed;
-  top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(255, 255, 255, 0.95);
-  z-index: 10000;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-}
-
-.hidden { display: none !important; }
-
-/* TABLAS */
-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.85rem; }
-th { background: var(--primary); color: white; padding: 10px; }
-td { border-bottom: 1px solid #eee; padding: 10px; color: #333; }
-.status-pagado { color: green; font-weight: bold; }
-.status-pendiente { color: #e67e22; font-weight: bold; }
-
-  #loading {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
   background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(5px); /* Desenfoque de fondo */
-  z-index: 99999; /* Por encima de todo */
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  backdrop-filter: blur(5px);
+  z-index: 99999;
+  display: flex; justify-content: center; align-items: center;
 }
 
-.loader-content {
-  text-align: center;
-}
-
-.loader-content img {
-  width: 120px; /* Tamaño de la pelota */
-  height: auto;
-  margin-bottom: 15px;
-}
-
-.loader-content p {
-  color: #235d3a;
-  font-weight: 900;
-  letter-spacing: 2px;
-  font-family: 'Lato', sans-serif;
-  margin: 0;
-}
+.loader-content { text-align: center; }
+.loader-content img { width: 120px; height: auto; margin-bottom: 15px; }
 
 .hidden { display: none !important; }
 
-  .admin-access-container {
-  margin-top: 25px;
-  border-top: 1px solid #eee;
-  padding-top: 15px;
-  text-align: center;
+/* ADMIN UI */
+.admin-access-container {
+  margin-top: 30px; padding-top: 15px;
+  border-top: 1px dotted #ccc;
+  display: flex; justify-content: center;
 }
 
 .btn-admin {
-  background: none !important;
-  color: #999 !important;
-  border: none !important;
-  padding: 5px !important;
-  margin: 0 !important;
-  font-size: 0.75rem !important;
-  font-weight: 400 !important;
-  text-transform: none !important;
-  cursor: pointer;
-  letter-spacing: 0;
-  width: auto !important;
+  background: none !important; color: #999 !important;
+  border: none !important; padding: 5px !important;
+  font-size: 0.75rem !important; cursor: pointer;
+  width: auto !important; margin: 0 !important;
 }
 
-.btn-admin:hover {
-  color: var(--primary) !important;
-  text-decoration: underline;
-  transform: none !important;
-  box-shadow: none !important;
-}
-  /* Espaciado para que el botón de admin no choque con los campos */
-.admin-access-container {
-  margin-top: 30px;
-  padding-top: 15px;
-  border-top: 1px dotted #ccc;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-}
-
-#view-booking {
-  margin-top: 20px; /* Evita que el contenido de reserva suba demasiado */
-}
+table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.85rem; }
+th { background: var(--primary); color: white; padding: 10px; }
+td { border-bottom: 1px solid #eee; padding: 10px; }
 </style>
 </head>
 
@@ -195,7 +106,7 @@ td { border-bottom: 1px solid #eee; padding: 10px; color: #333; }
 <div id="loading" class="hidden">
   <div class="loader-content">
     <img src="https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3enpiZ2Z2Nzl6cHdmNWgxOHI0d3F5c2xwcDloaTgzbDVneDFubGZldiZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/WouU7wwav5MqzzmmtQ/giphy.gif" alt="Cargando...">
-    <p>PROCESANDO...</p>
+    <p style="color: var(--primary); font-weight: 900;">PROCESANDO...</p>
   </div>
 </div>
 
@@ -211,14 +122,12 @@ td { border-bottom: 1px solid #eee; padding: 10px; color: #333; }
     <input type="text" id="login-fecha" placeholder="DD/MM/AAAA" maxlength="10">
     <small style="color:#888;">Formato automático al escribir.</small>
     
-<button onclick="validarUsuario()">Ingresar al Sistema</button>
+    <button onclick="validarUsuario()">Ingresar al Sistema</button>
 
-  <div class="admin-access-container">
-      <button onclick="showAdminLogin()" class="btn-admin">
-        🔒 Acceso Administración
-      </button>
+    <div class="admin-access-container">
+      <button onclick="showAdminLogin()" class="btn-admin">🔒 Acceso Administración</button>
+    </div>
   </div>
-</div
 
   <div id="view-booking" class="hidden">
     <h2 id="welcome-msg">Hola Socio</h2>
@@ -289,7 +198,7 @@ td { border-bottom: 1px solid #eee; padding: 10px; color: #333; }
 </div>
 
 <script>
-  // --- MÁSCARA AUTOMÁTICA DE FECHA ---
+  // Máscara de fecha
   const inputFecha = document.getElementById('login-fecha');
   inputFecha.addEventListener('keyup', function(e) {
     if (e.key !== 'Backspace') {
@@ -301,29 +210,23 @@ td { border-bottom: 1px solid #eee; padding: 10px; color: #333; }
 
   const API_URL = "https://script.google.com/macros/s/AKfycbxaAz1Z1PKwIyiyDV_WCT1qhHC_ALdsgpqH0U0Xf1oeWFHYHISjK5unJtyCtSYISMu7/exec"; 
 
-async function llamarAPI(accion, datos = {}) {
-  const loader = document.getElementById('loading');
-  
-  // 1. Mostrar la pelota antes de la petición
-  loader.classList.remove('hidden');
-
-  try {
-    const response = await fetch(API_URL, {
-      method: "POST",
-      body: JSON.stringify({ action: accion, ...datos })
-    });
-    const resultado = await response.json();
-    
-    // 2. Ocultar la pelota cuando llega la respuesta
-    loader.classList.add('hidden');
-    return resultado;
-  } catch (error) {
-    // 3. Ocultar si hay error para no bloquear la pantalla
-    loader.classList.add('hidden');
-    console.error("Error:", error);
-    return null;
+  async function llamarAPI(accion, datos = {}) {
+    const loader = document.getElementById('loading');
+    loader.classList.remove('hidden');
+    try {
+      const response = await fetch(API_URL, {
+        method: "POST",
+        body: JSON.stringify({ action: accion, ...datos })
+      });
+      const resultado = await response.json();
+      loader.classList.add('hidden');
+      return resultado;
+    } catch (error) {
+      loader.classList.add('hidden');
+      console.error(error);
+      return null;
+    }
   }
-}
 
   let usuarioActual = "";
 
@@ -331,7 +234,6 @@ async function llamarAPI(accion, datos = {}) {
     const socio = document.getElementById('login-socio').value;
     const fecha = document.getElementById('login-fecha').value;
     if(!socio || !fecha) return alert("Complete los datos");
-
     const res = await llamarAPI('validarSocio', { socio, fecha });
     if (res && res.success) {
         usuarioActual = { id: socio, nombre: res.nombre };
@@ -339,9 +241,7 @@ async function llamarAPI(accion, datos = {}) {
         document.getElementById('view-booking').classList.remove('hidden');
         document.getElementById('welcome-msg').innerText = "Hola, " + res.nombre;
         inicializarHoras();
-    } else {
-        alert("Socio no encontrado o fecha incorrecta.");
-    }
+    } else { alert("Datos incorrectos"); }
   }
 
   function inicializarHoras() {
@@ -358,12 +258,6 @@ async function llamarAPI(accion, datos = {}) {
   function cargarConfiguracionDia() {
     const fecha = document.getElementById('reserva-fecha').value;
     if(!fecha) return;
-    const dia = new Date(fecha + 'T00:00:00').getDay();
-    if(dia === 1) {
-      alert("Lunes cerrado");
-      document.getElementById('reserva-fecha').value = "";
-      return;
-    }
     document.getElementById('config-area').classList.remove('hidden');
     cargarCanchas();
   }
@@ -372,14 +266,11 @@ async function llamarAPI(accion, datos = {}) {
     const fecha = document.getElementById('reserva-fecha').value;
     const hora = document.getElementById('reserva-hora').value;
     const duracion = document.getElementById('reserva-duracion').value;
-    
     const ocupadas = await llamarAPI('obtenerDisponibilidad', { fechaStr: fecha });
     const select = document.getElementById('reserva-cancha');
     select.innerHTML = "";
-    
-    const dia = new Date(fecha + 'T00:00:00').getDay();
+    let dia = new Date(fecha + 'T00:00:00').getDay();
     let limite = (dia === 0 || dia === 6) ? 6 : 2;
-
     for(let i=1; i<=limite; i++) {
       let ocupada = ocupadas?.some(r => r.cancha == i && Math.max(r.hora, hora) < Math.min(parseInt(r.hora)+parseInt(r.duracion), parseInt(hora)+parseInt(duracion)));
       if(!ocupada) {
@@ -388,7 +279,6 @@ async function llamarAPI(accion, datos = {}) {
         select.appendChild(opt);
       }
     }
-    if(select.options.length === 0) select.innerHTML = "<option>No hay canchas</option>";
   }
 
   function generarCamposJugadores() {
@@ -397,11 +287,10 @@ async function llamarAPI(accion, datos = {}) {
     container.innerHTML = "<p><b>Jugadores:</b></p>";
     let cantidad = (tipo === 'single') ? 2 : 4;
     for(let i=2; i<=cantidad; i++) {
-      container.innerHTML += `
-        <div style="display:flex; gap:5px; margin-bottom:5px;">
-          <select class="tipo-jugador" onchange="calcularPrecio()" style="width:40%"><option value="socio">Socio</option><option value="nosocio">No Socio</option></select>
-          <input type="text" class="dato-jugador" placeholder="Nombre/Socio" style="width:60%">
-        </div>`;
+      container.innerHTML += `<div style="display:flex; gap:5px; margin-bottom:5px;">
+        <select class="tipo-jugador" onchange="calcularPrecio()" style="width:40%"><option value="socio">Socio</option><option value="nosocio">No Socio</option></select>
+        <input type="text" class="dato-jugador" placeholder="Nombre/Socio" style="width:60%">
+      </div>`;
     }
   }
 
@@ -410,107 +299,42 @@ async function llamarAPI(accion, datos = {}) {
     const duracion = parseInt(document.getElementById('reserva-duracion').value);
     let tSocio = (hora < 18) ? 1000 : 1500;
     let tNoSocio = (hora < 18) ? 2000 : 2500;
-    
-    let total = tSocio * duracion; // Titular
-    const otros = document.querySelectorAll('.tipo-jugador');
-    otros.forEach(s => total += (s.value === 'socio' ? tSocio : tNoSocio) * duracion);
-    
+    let total = tSocio * duracion;
+    document.querySelectorAll('.tipo-jugador').forEach(s => total += (s.value === 'socio' ? tSocio : tNoSocio) * duracion);
     document.getElementById('precio-total').innerText = "Total a Pagar: $" + total;
     return total;
   }
 
- async function enviarReserva() {
+  async function enviarReserva() {
     const cancha = document.getElementById('reserva-cancha').value;
-    if(!cancha || isNaN(cancha)) return alert("Seleccione una cancha válida.");
-
-    // Capturar datos básicos
+    if(!cancha) return alert("Seleccione cancha");
     const fecha = document.getElementById('reserva-fecha').value;
     const hora = document.getElementById('reserva-hora').value;
     const duracion = document.getElementById('reserva-duracion').value;
     const total = calcularPrecio();
-
-    // RECOPILAR JUGADORES (Titular + Invitados)
     let detalleJugadores = `${usuarioActual.nombre} (Titular)`;
-    const inputsJugadores = document.getElementsByClassName('dato-jugador');
-    for(let inp of inputsJugadores) {
-      if(inp.value.trim() !== "") {
-        detalleJugadores += `, ${inp.value.trim()}`;
-      }
-    }
+    document.querySelectorAll('.dato-jugador').forEach(inp => { if(inp.value) detalleJugadores += `, ${inp.value}`; });
 
-    const datos = {
-      fecha: fecha,
-      hora: hora,
-      duracion: duracion,
-      cancha: cancha,
-      socioTitular: usuarioActual.id,
-      detalleJugadores: detalleJugadores,
-      total: total
-    };
-
+    const datos = { fecha, hora, duracion, cancha, socioTitular: usuarioActual.id, detalleJugadores, total };
     const res = await llamarAPI('guardarReserva', { datos });
-    
     if(res?.success) {
       document.getElementById('view-booking').classList.add('hidden');
       document.getElementById('view-success').classList.remove('hidden');
-      
-      // CONFIGURACIÓN DEL MENSAJE Y NÚMERO
-      const nroCasilla = "5491130351121";
-      const mensajeWA = `🎾 *RESERVA DE TENIS*%0A` +
-                        `*CLUB ASTURIANO*%0A%0A` +
-                        `👤 *Titular:* ${usuarioActual.nombre}%0A` +
-                        `📅 *Fecha:* ${fecha}%0A` +
-                        `⏰ *Hora:* ${hora}:00 hs (${duracion}h)%0A` +
-                        `🏟️ *Cancha:* ${cancha}%0A` +
-                        `👥 *Jugadores:* ${detalleJugadores}%0A` +
-                        `💰 *Total a Pagar:* $${total}%0A%0A` +
-                        `_Enviado desde el Sistema de Reservas._`;
-
-      // Generar URL directa al chat de la casilla
-      const urlWA = `https://wa.me/${nroCasilla}?text=${mensajeWA}`;
-
-      document.getElementById('resumen-final').innerHTML = `
-        <div style="text-align:left; font-size:0.9rem;">
-          <p><strong>Titular:</strong> ${usuarioActual.nombre}</p>
-          <p><strong>Fecha:</strong> ${fecha}</p>
-          <p><strong>Cancha:</strong> ${cancha} (${hora}:00 hs)</p>
-          <p style="font-size:1.1rem; color:var(--primary);"><strong>Total: $${total}</strong></p>
-        </div>
-        <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
-        <p style="font-size:0.85rem; color:#444; margin-bottom:12px;">
-          Para completar el proceso, envíe el comprobante a la casilla del club:
-        </p>
-        <a href="${urlWA}" target="_blank" style="display:block; background:#25d366; color:white; text-decoration:none; padding:15px; border-radius:8px; font-weight:bold; text-align:center; box-shadow: 0 4px 12px rgba(37,211,102,0.4); text-transform:uppercase; letter-spacing:1px;">
-          📲 Enviar a la Casilla
-        </a>
-      `;
-    } else {
-      alert("Error al guardar reserva. Intente nuevamente.");
+      const urlWA = `https://wa.me/5491130351121?text=Reserva: ${usuarioActual.nombre} - Cancha ${cancha} - Total $${total}`;
+      document.getElementById('resumen-final').innerHTML = `Detalle: Cancha ${cancha}, ${hora}:00hs. <br><br> <a href="${urlWA}" target="_blank" style="display:block; background:#25d366; color:white; padding:10px; text-align:center; text-decoration:none; border-radius:5px;">ENVIAR WHATSAPP</a>`;
     }
   }
-  function showAdminLogin() {
-  setTimeout(() => {
-    let pass = prompt("🔐 Ingrese la clave de administración:");
-    
-    if (pass === null) return; 
 
-    if (pass === "admin123") { 
-      // OCULTAMOS ABSOLUTAMENTE TODO
-      document.getElementById('view-login').classList.add('hidden');
-      document.getElementById('view-booking').classList.add('hidden');
-      document.getElementById('view-success').classList.add('hidden');
-      
-      // MOSTRAMOS SOLO EL PANEL ADMIN
-      const viewAdmin = document.getElementById('view-admin');
-      if(viewAdmin) {
-          viewAdmin.classList.remove('hidden');
-          cargarAdmin(); // Llama a tu función que trae los datos de la hoja
+  function showAdminLogin() {
+    setTimeout(() => {
+      let pass = prompt("Clave:");
+      if (pass === "admin123") {
+        document.getElementById('view-login').classList.add('hidden');
+        document.getElementById('view-admin').classList.remove('hidden');
+        // Aquí llamarías a cargarAdmin() si existe
       }
-    } else {
-      alert("❌ Contraseña incorrecta");
-    }
-  }, 100);
-}
+    }, 100);
+  }
 </script>
 </body>
 </html>
