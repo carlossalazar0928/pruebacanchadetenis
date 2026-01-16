@@ -260,6 +260,47 @@ function validarLunes(input) {
   }
 }
 
+// 2. Carga de Canchas con Alerta de No Disponibilidad
+async function cargarCanchas() {
+    const fecha = document.getElementById('reserva-fecha').value;
+    const horaInicio = parseInt(document.getElementById('reserva-hora').value);
+    const duracionReserva = parseInt(document.getElementById('reserva-duracion').value);
+    const horaFin = horaInicio + duracionReserva;
+    
+    if(!fecha || isNaN(horaInicio)) return;
+
+    const ocupadas = await llamarAPI('obtenerDisponibilidad', { fechaStr: fecha });
+    const select = document.getElementById('reserva-cancha');
+    
+    select.innerHTML = '<option value="">-- Verificando... --</option>';
+    
+    const dia = new Date(fecha + 'T00:00:00').getDay();
+    let limiteCanchas = (dia === 0 || dia === 6) ? 6 : 2;
+
+    let opcionesEncontradas = 0;
+    let htmlOpciones = '<option value="">-- Seleccione Cancha --</option>';
+
+    for (let i = 1; i <= limiteCanchas; i++) {
+        let estaOcupada = ocupadas?.some(r => {
+            if (parseInt(r.cancha) !== i) return false;
+            let rHoraFin = parseInt(r.hora) + parseInt(r.duracion || 1);
+            return (horaInicio < rHoraFin && horaFin > parseInt(r.hora));
+        });
+
+        if (!estaOcupada) {
+            htmlOpciones += `<option value="${i}">Cancha ${i}</option>`;
+            opcionesEncontradas++;
+        }
+    }
+
+    if (opcionesEncontradas === 0) {
+        alert("⚠️ No hay canchas disponibles para este horario/duración. Por favor, elija otra hora.");
+        select.innerHTML = "<option value=''>❌ Sin disponibilidad</option>";
+    } else {
+        select.innerHTML = htmlOpciones;
+    }
+}
+
   const API_URL = "https://script.google.com/macros/s/AKfycbxaAz1Z1PKwIyiyDV_WCT1qhHC_ALdsgpqH0U0Xf1oeWFHYHISjK5unJtyCtSYISMu7/exec"; 
 
   async function llamarAPI(accion, datos = {}) {
@@ -316,47 +357,6 @@ document.getElementById('reserva-fecha').setAttribute('min', hoy);
     document.getElementById('config-area').classList.remove('hidden');
     cargarCanchas();
   }
-
-// 2. Carga de Canchas con Alerta de No Disponibilidad
-async function cargarCanchas() {
-    const fecha = document.getElementById('reserva-fecha').value;
-    const horaInicio = parseInt(document.getElementById('reserva-hora').value);
-    const duracionReserva = parseInt(document.getElementById('reserva-duracion').value);
-    const horaFin = horaInicio + duracionReserva;
-    
-    if(!fecha || isNaN(horaInicio)) return;
-
-    const ocupadas = await llamarAPI('obtenerDisponibilidad', { fechaStr: fecha });
-    const select = document.getElementById('reserva-cancha');
-    
-    select.innerHTML = '<option value="">-- Verificando... --</option>';
-    
-    const dia = new Date(fecha + 'T00:00:00').getDay();
-    let limiteCanchas = (dia === 0 || dia === 6) ? 6 : 2;
-
-    let opcionesEncontradas = 0;
-    let htmlOpciones = '<option value="">-- Seleccione Cancha --</option>';
-
-    for (let i = 1; i <= limiteCanchas; i++) {
-        let estaOcupada = ocupadas?.some(r => {
-            if (parseInt(r.cancha) !== i) return false;
-            let rHoraFin = parseInt(r.hora) + parseInt(r.duracion || 1);
-            return (horaInicio < rHoraFin && horaFin > parseInt(r.hora));
-        });
-
-        if (!estaOcupada) {
-            htmlOpciones += `<option value="${i}">Cancha ${i}</option>`;
-            opcionesEncontradas++;
-        }
-    }
-
-    if (opcionesEncontradas === 0) {
-        alert("⚠️ No hay canchas disponibles para este horario/duración. Por favor, elija otra hora.");
-        select.innerHTML = "<option value=''>❌ Sin disponibilidad</option>";
-    } else {
-        select.innerHTML = htmlOpciones;
-    }
-}
 
   function generarCamposJugadores() {
     const tipo = document.getElementById('reserva-tipo').value;
