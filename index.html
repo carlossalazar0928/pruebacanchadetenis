@@ -183,9 +183,9 @@ td { border-bottom: 1px solid #eee; padding: 10px; }
       </select>
       
       <label>Seleccionar Cancha</label>
-      <select id="reserva-cancha">
-        <option value="">-- Seleccione horario --</option>
-      </select>
+<select id="reserva-cancha">
+  <option value="">-- Primero seleccione hora --</option>
+</select>
 
       <div id="jugadores-container" style="margin-top:15px; border:1px solid #eee; padding:10px; border-radius:8px;"></div>
 
@@ -278,16 +278,27 @@ function validarLunes(input) {
 // 2. Carga de Canchas con Alerta de No Disponibilidad
 async function cargarCanchas() {
     const fecha = document.getElementById('reserva-fecha').value;
-    const horaInicio = parseInt(document.getElementById('reserva-hora').value);
+    const selectHora = document.getElementById('reserva-hora'); // Obtenemos el elemento
+    const selectCanchas = document.getElementById('reserva-cancha');
+    
+    // 1. VALIDACIÓN NUEVA: Si no eligió hora todavía
+    if (selectHora.value === "") {
+        selectCanchas.innerHTML = '<option value="">-- Primero seleccione hora --</option>';
+        return; // 🛑 DETIENE LA EJECUCIÓN AQUÍ (No llama a la API)
+    }
+
+    // Si pasó el filtro, ahora sí convertimos a números
+    const horaInicio = parseInt(selectHora.value);
     const duracionReserva = parseInt(document.getElementById('reserva-duracion').value);
     const horaFin = horaInicio + duracionReserva;
     
-    if(!fecha || isNaN(horaInicio)) return;
+    if(!fecha) return; // Validación extra de fecha
+
+    // --- DE AQUÍ PARA ABAJO ES TU CÓDIGO ORIGINAL ---
 
     const ocupadas = await llamarAPI('obtenerDisponibilidad', { fechaStr: fecha });
-    const select = document.getElementById('reserva-cancha');
     
-    select.innerHTML = '<option value="">-- Verificando... --</option>';
+    selectCanchas.innerHTML = '<option value="">-- Verificando... --</option>';
     
     const dia = new Date(fecha + 'T00:00:00').getDay();
     let limiteCanchas = (dia === 0 || dia === 6) ? 6 : 2;
@@ -310,9 +321,9 @@ async function cargarCanchas() {
 
     if (opcionesEncontradas === 0) {
         alert("⚠️ No hay canchas disponibles para este horario/duración. Por favor, elija otra hora.");
-        select.innerHTML = "<option value=''>❌ Sin disponibilidad</option>";
+        selectCanchas.innerHTML = "<option value=''>❌ Sin disponibilidad</option>";
     } else {
-        select.innerHTML = htmlOpciones;
+        selectCanchas.innerHTML = htmlOpciones;
     }
 }
 
@@ -355,14 +366,20 @@ const hoy = new Date().toISOString().split('T')[0];
 document.getElementById('reserva-fecha').setAttribute('min', hoy);
   }
 
-  function inicializarHoras() {
+function inicializarHoras() {
     const select = document.getElementById('reserva-hora');
-    select.innerHTML = "";
+    
+    // 1. Agregamos la opción por defecto vacía
+    select.innerHTML = '<option value="">-- Seleccione Hora --</option>';
+    
+    // 2. Llenamos el resto de las horas
     for(let i=7; i<=20; i++) {
        let opt = document.createElement('option');
-       opt.value = i; opt.text = i + ":00 hs";
+       opt.value = i; 
+       opt.text = i + ":00 hs";
        select.appendChild(opt);
     }
+    
     generarCamposJugadores();
   }
 
