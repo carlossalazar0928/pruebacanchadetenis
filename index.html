@@ -32,6 +32,17 @@ body {
   box-shadow: 0 25px 50px rgba(0,0,0,0.5);
   position: relative;
   box-sizing: border-box;
+  /* Busca tu clase .container actual y asegúrate de que tenga transition */
+.container {
+  background: var(--white);
+  width: 90%;
+  max-width: 420px; /* Ancho normal para login */
+  /* ... resto de tus estilos ... */
+  
+  /* AGREGA ESTO PARA QUE SE AGRANDE SUAVEMENTE: */
+  transition: max-width 0.5s ease-in-out;
+}
+
 }
 
 .container::before {
@@ -106,6 +117,10 @@ td { border-bottom: 1px solid #eee; padding: 10px; }
 /* Si el select queda en "Sin disponibilidad", se pone en rojo suave */
 #reserva-cancha:has(option[value=""]) {
     border-color: #ffcccc;
+}
+  /* AGREGA ESTA NUEVA REGLA AL FINAL DE TU CSS */
+.container.admin-mode {
+  max-width: 1000px !important; /* Ancho para Administrador */
 }
 </style>
 </head>
@@ -405,19 +420,35 @@ document.getElementById('reserva-fecha').setAttribute('min', hoy);
 function showAdminLogin() {
   setTimeout(() => {
     let pass = prompt("🔐 Ingrese la clave de administración:");
-    if (pass === "admin123") {
+    
+    if (pass === null) return; 
+
+    if (pass === "admin123") { 
+      // 1. Ocultar vistas normales
       document.getElementById('view-login').classList.add('hidden');
+      document.getElementById('view-booking').classList.add('hidden');
+      document.getElementById('view-success').classList.add('hidden');
+      
+      // 2. EXPANDIR LA TARJETA (ESTA ES LA LÍNEA NUEVA)
+      document.querySelector('.container').classList.add('admin-mode'); // ◄--- AGREGAR ESTO
+      
+      // 3. Mostrar panel admin e inicializar horas
       document.getElementById('view-admin').classList.remove('hidden');
       
-      // Inicializar horas en el formulario admin
+      // Inicializar el select de horas del admin
       const adminHora = document.getElementById('admin-reserva-hora');
-      adminHora.innerHTML = "";
-      for(let i=7; i<=21; i++) {
-        let opt = document.createElement('option');
-        opt.value = i; opt.text = i + ":00 hs";
-        adminHora.appendChild(opt);
+      if(adminHora) {
+          adminHora.innerHTML = "";
+          for(let i=7; i<=21; i++) {
+            let opt = document.createElement('option');
+            opt.value = i; opt.text = i + ":00 hs";
+            adminHora.appendChild(opt);
+          }
       }
+      
       cargarAdmin();
+    } else {
+      alert("❌ Contraseña incorrecta");
     }
   }, 100);
 }
