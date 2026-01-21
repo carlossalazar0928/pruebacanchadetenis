@@ -168,13 +168,12 @@ td { border-bottom: 1px solid #eee; padding: 10px; }
            <select id="reserva-hora" onchange="calcularPrecio()"></select>
         </div>
         <div style="flex:1;">
-           <label>Duración</label>
-           <select id="reserva-duracion" onchange="cargarCanchas(); calcularPrecio();">
-             <option value="1">1 Hora</option>
-             <option value="2">2 Horas</option>
-           </select>
-        </div>
-      </div>
+<label>Duración</label>
+<select id="reserva-duracion" onchange="cargarCanchas(); calcularPrecio();">
+  <option value="" selected disabled>-- Seleccione --</option>
+  <option value="1">1 Hora</option>
+  <option value="2">2 Horas</option>
+</select>
 
       <label>Tipo de Juego</label>
       <select id="reserva-tipo" onchange="generarCamposJugadores(); calcularPrecio();">
@@ -278,24 +277,23 @@ function validarLunes(input) {
 // 2. Carga de Canchas con Alerta de No Disponibilidad
 async function cargarCanchas() {
     const fecha = document.getElementById('reserva-fecha').value;
-    const selectHora = document.getElementById('reserva-hora'); // Obtenemos el elemento
+    const selectHora = document.getElementById('reserva-hora');
+    const selectDuracion = document.getElementById('reserva-duracion'); // Nuevo
     const selectCanchas = document.getElementById('reserva-cancha');
     
-    // 1. VALIDACIÓN NUEVA: Si no eligió hora todavía
-    if (selectHora.value === "") {
-        selectCanchas.innerHTML = '<option value="">-- Primero seleccione hora --</option>';
-        return; // 🛑 DETIENE LA EJECUCIÓN AQUÍ (No llama a la API)
+    // VALIDACIÓN: Si falta la HORA o falta la DURACIÓN, paramos.
+    if (selectHora.value === "" || selectDuracion.value === "") {
+        selectCanchas.innerHTML = '<option value="">-- Complete Hora y Duración --</option>';
+        return; 
     }
 
-    // Si pasó el filtro, ahora sí convertimos a números
     const horaInicio = parseInt(selectHora.value);
-    const duracionReserva = parseInt(document.getElementById('reserva-duracion').value);
+    const duracionReserva = parseInt(selectDuracion.value);
     const horaFin = horaInicio + duracionReserva;
     
-    if(!fecha) return; // Validación extra de fecha
+    if(!fecha) return; 
 
-    // --- DE AQUÍ PARA ABAJO ES TU CÓDIGO ORIGINAL ---
-
+    // --- EL RESTO DE TU LÓGICA SIGUE IGUAL ---
     const ocupadas = await llamarAPI('obtenerDisponibilidad', { fechaStr: fecha });
     
     selectCanchas.innerHTML = '<option value="">-- Verificando... --</option>';
@@ -403,9 +401,18 @@ function inicializarHoras() {
     }
   }
 
-  function calcularPrecio() {
-    const hora = parseInt(document.getElementById('reserva-hora').value);
-    const duracion = parseInt(document.getElementById('reserva-duracion').value);
+function calcularPrecio() {
+    const horaVal = document.getElementById('reserva-hora').value;
+    const duracionVal = document.getElementById('reserva-duracion').value;
+
+    // Si falta alguno de los dos datos, mostramos $0 y salimos
+    if (horaVal === "" || duracionVal === "") {
+        document.getElementById('precio-total').innerText = "Total a Pagar: $0";
+        return 0;
+    }
+
+    const hora = parseInt(horaVal);
+    const duracion = parseInt(duracionVal);
     let tSocio = (hora < 18) ? 1000 : 1500;
     let tNoSocio = (hora < 18) ? 2000 : 2500;
     let total = tSocio * duracion;
