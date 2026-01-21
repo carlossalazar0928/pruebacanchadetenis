@@ -369,10 +369,10 @@ document.getElementById('reserva-fecha').setAttribute('min', hoy);
 function inicializarHoras() {
     const select = document.getElementById('reserva-hora');
     
-    // 1. Agregamos la opción por defecto vacía
-    select.innerHTML = '<option value="">-- Seleccione Hora --</option>';
+    // CAMBIO AQUÍ: Agregamos 'selected disabled' para obligar a elegir
+    select.innerHTML = '<option value="" selected disabled>-- Seleccione Hora --</option>';
     
-    // 2. Llenamos el resto de las horas
+    // Llenamos el resto de las horas normalmente
     for(let i=7; i<=20; i++) {
        let opt = document.createElement('option');
        opt.value = i; 
@@ -381,7 +381,7 @@ function inicializarHoras() {
     }
     
     generarCamposJugadores();
-  }
+}
 
   function cargarConfiguracionDia() {
     const fecha = document.getElementById('reserva-fecha').value;
