@@ -26,23 +26,14 @@ body {
 
 .container {
   background: var(--white);
-  width: 90%; max-width: 420px;
+  width: 90%; 
+  max-width: 420px;
   padding: 70px 30px 35px 30px;
   border-radius: 15px;
   box-shadow: 0 25px 50px rgba(0,0,0,0.5);
   position: relative;
   box-sizing: border-box;
-  /* Busca tu clase .container actual y asegúrate de que tenga transition */
-.container {
-  background: var(--white);
-  width: 90%;
-  max-width: 420px; /* Ancho normal para login */
-  /* ... resto de tus estilos ... */
-  
-  /* AGREGA ESTO PARA QUE SE AGRANDE SUAVEMENTE: */
-  transition: max-width 0.5s ease-in-out;
-}
-
+  transition: max-width 0.5s ease-in-out; /* Esta es la línea importante */
 }
 
 .container::before {
@@ -167,14 +158,14 @@ td { border-bottom: 1px solid #eee; padding: 10px; }
            <label>Hora Inicio</label>
            <select id="reserva-hora" onchange="calcularPrecio()"></select>
         </div>
-        <div style="flex:1;">
-          
-      <label>Duración</label>
-<select id="reserva-duracion" onchange="cargarCanchas(); calcularPrecio();">
-  <option value="" selected disabled>-- Seleccione --</option>
-  <option value="1">1 Hora</option>
-  <option value="2">2 Horas</option>
-</select>
+<div style="flex:1;">
+          <label>Duración</label>
+          <select id="reserva-duracion" onchange="cargarCanchas(); calcularPrecio();">
+            <option value="" selected disabled>-- Seleccione --</option>
+            <option value="1">1 Hora</option>
+            <option value="2">2 Horas</option>
+          </select>
+        </div>
 
       <label>Tipo de Juego</label>
       <select id="reserva-tipo" onchange="generarCamposJugadores(); calcularPrecio();">
