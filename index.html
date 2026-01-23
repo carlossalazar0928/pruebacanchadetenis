@@ -150,19 +150,19 @@ select option[value=""] {
     
     <label>Fecha de Reserva</label>
     <input type="date" id="reserva-fecha" 
-           onchange="validarLunes(this); cargarConfiguracionDia();" 
+           onchange="validarLunes(this); actualizarInterfaz();" 
            onkeydown="return false">
     
     <div id="config-area" class="hidden">
       <div style="display:flex; gap:10px;">
         <div style="flex:1;">
            <label>Hora Inicio</label>
-           <select id="reserva-hora" onchange="calcularPrecio()"></select>
+           <select id="reserva-hora" onchange="actualizarInterfaz()"></select>
         </div>
         <div style="flex:1;">
           <label>Duración</label>
-          <select id="reserva-duracion" onchange="cargarCanchas(); calcularPrecio();">
-            <option value="" selected disabled>-- Seleccione --</option>
+          <select id="reserva-duracion" onchange="actualizarInterfaz();">
+            <option value="" selected disabled>-- Elija --</option>
             <option value="1">1 Hora</option>
             <option value="2">2 Horas</option>
           </select>
@@ -170,14 +170,15 @@ select option[value=""] {
       </div>
 
       <label>Tipo de Juego</label>
-      <select id="reserva-tipo" onchange="generarCamposJugadores(); calcularPrecio();">
+      <select id="reserva-tipo" onchange="actualizarInterfaz();">
+        <option value="" selected disabled>-- Seleccione --</option>
         <option value="single">Single (2 Personas)</option>
         <option value="doble">Dobles (4 Personas)</option>
       </select>
       
       <label>Seleccionar Cancha</label>
       <select id="reserva-cancha">
-        <option value="">-- Primero seleccione hora --</option>
+        <option value="">-- Complete los datos arriba --</option>
       </select>
 
       <div id="jugadores-container" style="margin-top:15px; border:1px solid #eee; padding:10px; border-radius:8px;"></div>
@@ -198,7 +199,6 @@ select option[value=""] {
 
   <div id="view-admin" class="hidden">
     <h2>Panel de Control - Administración</h2>
-    
     <div style="background: #f4f4f4; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ddd;">
       <h3 style="margin-top:0; font-size: 1rem; color: var(--primary);">➕ Bloquear Turno / Reserva Manual</h3>
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
@@ -223,7 +223,6 @@ select option[value=""] {
       </div>
       <button onclick="reservaManualAdmin()" style="margin-top:10px; padding: 10px; background: #444;">Bloquear Horario</button>
     </div>
-
     <div id="admin-content" style="overflow-x:auto;">
       <table id="admin-table">
         <thead>
@@ -254,44 +253,57 @@ select option[value=""] {
     }
   }); 
 
-// 1. Bloqueo de Lunes y Fecha Mínima
+// --- NUEVA FUNCIÓN MAESTRA DE REFRESCO ---
+function actualizarInterfaz() {
+    const horaVal = document.getElementById('reserva-hora').value;
+    const duracionVal = document.getElementById('reserva-duracion').value;
+    const tipoVal = document.getElementById('reserva-tipo').value;
+
+    // 1. Generar campos de jugadores y calcular precio (siempre que haya tipo de juego)
+    if(tipoVal !== "") {
+        generarCamposJugadores();
+        calcularPrecio();
+    } else {
+        document.getElementById('jugadores-container').innerHTML = "";
+        document.getElementById('precio-total').innerText = "Total a Pagar: $0";
+    }
+
+    // 2. Refrescar canchas solo si tenemos los 3 datos clave + fecha
+    const fecha = document.getElementById('reserva-fecha').value;
+    if(fecha && horaVal && duracionVal) {
+        cargarCanchas();
+    } else {
+        document.getElementById('reserva-cancha').innerHTML = '<option value="">-- Complete los datos arriba --</option>';
+    }
+}
+
 function validarLunes(input) {
   const hoy = new Date().toISOString().split('T')[0];
-  input.setAttribute('min', hoy); // Evita fechas pasadas
+  input.setAttribute('min', hoy);
 
   const fechaSeleccionada = new Date(input.value + 'T00:00:00');
-  const diaSemana = fechaSeleccionada.getDay(); // 1 es Lunes
+  const diaSemana = fechaSeleccionada.getDay(); 
 
   if (diaSemana === 1) {
-    alert("📌 El club permanece cerrado los días lunes por mantenimiento. Por favor, seleccione otro día.");
+    alert("📌 El club permanece cerrado los días lunes por mantenimiento.");
     input.value = "";
     document.getElementById('config-area').classList.add('hidden');
+  } else {
+    document.getElementById('config-area').classList.remove('hidden');
   }
 }
 
-// 2. Carga de Canchas con Alerta de No Disponibilidad
 async function cargarCanchas() {
     const fecha = document.getElementById('reserva-fecha').value;
-    const selectHora = document.getElementById('reserva-hora');
-    const selectDuracion = document.getElementById('reserva-duracion'); // Nuevo
+    const horaInicio = parseInt(document.getElementById('reserva-hora').value);
+    const duracionReserva = parseInt(document.getElementById('reserva-duracion').value);
     const selectCanchas = document.getElementById('reserva-cancha');
     
-    // VALIDACIÓN: Si falta la HORA o falta la DURACIÓN, paramos.
-    if (selectHora.value === "" || selectDuracion.value === "") {
-        selectCanchas.innerHTML = '<option value="">-- Complete Hora y Duración --</option>';
-        return; 
-    }
-
-    const horaInicio = parseInt(selectHora.value);
-    const duracionReserva = parseInt(selectDuracion.value);
     const horaFin = horaInicio + duracionReserva;
     
-    if(!fecha) return; 
-
-    // --- EL RESTO DE TU LÓGICA SIGUE IGUAL ---
-    const ocupadas = await llamarAPI('obtenerDisponibilidad', { fechaStr: fecha });
-    
     selectCanchas.innerHTML = '<option value="">-- Verificando... --</option>';
+
+    const ocupadas = await llamarAPI('obtenerDisponibilidad', { fechaStr: fecha });
     
     const dia = new Date(fecha + 'T00:00:00').getDay();
     let limiteCanchas = (dia === 0 || dia === 6) ? 6 : 2;
@@ -313,7 +325,6 @@ async function cargarCanchas() {
     }
 
     if (opcionesEncontradas === 0) {
-        alert("⚠️ No hay canchas disponibles para este horario/duración. Por favor, elija otra hora.");
         selectCanchas.innerHTML = "<option value=''>❌ Sin disponibilidad</option>";
     } else {
         selectCanchas.innerHTML = htmlOpciones;
@@ -354,43 +365,31 @@ async function cargarCanchas() {
         document.getElementById('welcome-msg').innerText = "Hola, " + res.nombre;
         inicializarHoras();
     } else { alert("Datos incorrectos"); }
-    // Dentro de la función validarUsuario(), después de mostrar view-booking:
-const hoy = new Date().toISOString().split('T')[0];
-document.getElementById('reserva-fecha').setAttribute('min', hoy);
+    const hoy = new Date().toISOString().split('T')[0];
+    document.getElementById('reserva-fecha').setAttribute('min', hoy);
   }
 
 function inicializarHoras() {
     const select = document.getElementById('reserva-hora');
-    
-    // CAMBIO AQUÍ: Agregamos 'selected disabled' para obligar a elegir
     select.innerHTML = '<option value="" selected disabled>-- Seleccione Hora --</option>';
-    
-    // Llenamos el resto de las horas normalmente
     for(let i=7; i<=20; i++) {
        let opt = document.createElement('option');
        opt.value = i; 
        opt.text = i + ":00 hs";
        select.appendChild(opt);
     }
-    
-    generarCamposJugadores();
 }
-
-  function cargarConfiguracionDia() {
-    const fecha = document.getElementById('reserva-fecha').value;
-    if(!fecha) return;
-    document.getElementById('config-area').classList.remove('hidden');
-    cargarCanchas();
-  }
 
   function generarCamposJugadores() {
     const tipo = document.getElementById('reserva-tipo').value;
     const container = document.getElementById('jugadores-container');
+    if(tipo === "") { container.innerHTML = ""; return; }
+    
     container.innerHTML = "<p><b>Jugadores:</b></p>";
     let cantidad = (tipo === 'single') ? 2 : 4;
     for(let i=2; i<=cantidad; i++) {
       container.innerHTML += `<div style="display:flex; gap:5px; margin-bottom:5px;">
-        <select class="tipo-jugador" onchange="calcularPrecio()" style="width:40%"><option value="socio">Socio</option><option value="nosocio">No Socio</option></select>
+        <select class="tipo-jugador" onchange="actualizarInterfaz()" style="width:40%"><option value="socio">Socio</option><option value="nosocio">No Socio</option></select>
         <input type="text" class="dato-jugador" placeholder="Nombre/Socio" style="width:60%">
       </div>`;
     }
@@ -399,9 +398,9 @@ function inicializarHoras() {
 function calcularPrecio() {
     const horaVal = document.getElementById('reserva-hora').value;
     const duracionVal = document.getElementById('reserva-duracion').value;
+    const tipoVal = document.getElementById('reserva-tipo').value;
 
-    // Si falta alguno de los dos datos, mostramos $0 y salimos
-    if (horaVal === "" || duracionVal === "") {
+    if (horaVal === "" || duracionVal === "" || tipoVal === "") {
         document.getElementById('precio-total').innerText = "Total a Pagar: $0";
         return 0;
     }
@@ -418,7 +417,8 @@ function calcularPrecio() {
 
   async function enviarReserva() {
     const cancha = document.getElementById('reserva-cancha').value;
-    if(!cancha) return alert("Seleccione cancha");
+    if(!cancha || cancha === "") return alert("Seleccione una cancha válida");
+    
     const fecha = document.getElementById('reserva-fecha').value;
     const hora = document.getElementById('reserva-hora').value;
     const duracion = document.getElementById('reserva-duracion').value;
@@ -436,25 +436,14 @@ function calcularPrecio() {
     }
   }
 
+// --- FUNCIONES ADMIN (Mantener igual) ---
 function showAdminLogin() {
   setTimeout(() => {
     let pass = prompt("🔐 Ingrese la clave de administración:");
-    
-    if (pass === null) return; 
-
     if (pass === "admin123") { 
-      // 1. Ocultar vistas normales
       document.getElementById('view-login').classList.add('hidden');
-      document.getElementById('view-booking').classList.add('hidden');
-      document.getElementById('view-success').classList.add('hidden');
-      
-      // 2. EXPANDIR LA TARJETA (ESTA ES LA LÍNEA NUEVA)
-      document.querySelector('.container').classList.add('admin-mode'); // ◄--- AGREGAR ESTO
-      
-      // 3. Mostrar panel admin e inicializar horas
+      document.querySelector('.container').classList.add('admin-mode');
       document.getElementById('view-admin').classList.remove('hidden');
-      
-      // Inicializar el select de horas del admin
       const adminHora = document.getElementById('admin-reserva-hora');
       if(adminHora) {
           adminHora.innerHTML = "";
@@ -464,11 +453,8 @@ function showAdminLogin() {
             adminHora.appendChild(opt);
           }
       }
-      
       cargarAdmin();
-    } else {
-      alert("❌ Contraseña incorrecta");
-    }
+    } else if(pass !== null) { alert("❌ Contraseña incorrecta"); }
   }, 100);
 }
 
@@ -476,72 +462,40 @@ async function cargarAdmin() {
   const res = await llamarAPI('obtenerReservasAdmin');
   const tbody = document.querySelector('#admin-table tbody');
   tbody.innerHTML = "";
-
   if(!res || res.length === 0) {
     tbody.innerHTML = "<tr><td colspan='6' style='text-align:center'>No hay reservas registradas</td></tr>";
     return;
   }
-
   res.forEach((r, i) => {
-    // r[1]=Fecha, r[2]=Hora, r[4]=Cancha, r[6]=Nombre Socio, r[9]=Estado Pago, r[10]=Cobrador
     const estado = r[9] || "Pendiente";
     const cobrador = r[10] || "-";
     const claseEstado = estado === "Abonada" ? "status-pagado" : "status-pendiente";
-
-    tbody.innerHTML += `
-      <tr>
+    tbody.innerHTML += `<tr>
         <td>${r[1]} <br> ${r[2]}hs</td>
         <td>Cancha ${r[4]}</td>
         <td>${r[6]}</td>
         <td class="${claseEstado}">${estado}</td>
         <td>${cobrador}</td>
-        <td>
-          ${estado !== "Abonada" ? 
-            `<select onchange="cobrarReserva(${i}, this.value)" style="font-size:0.7rem; padding:2px;">
-              <option value="">Cobrar...</option>
-              <option value="Perso 1">Perso 1</option>
-              <option value="Perso 2">Perso 2</option>
-              <option value="Perso 3">Perso 3</option>
-              <option value="Perso 4">Perso 4</option>
-              <option value="Franquero">Franquero</option>
-            </select>` : "✅"}
-        </td>
+        <td>${estado !== "Abonada" ? `<select onchange="cobrarReserva(${i}, this.value)"><option value="">Cobrar...</option><option value="Perso 1">Perso 1</option><option value="Perso 2">Perso 2</option><option value="Perso 3">Perso 3</option><option value="Perso 4">Perso 4</option><option value="Franquero">Franquero</option></select>` : "✅"}</td>
       </tr>`;
   });
 }
-
 async function cobrarReserva(index, cobrador) {
   if(!cobrador) return;
   if(confirm(`¿Confirmar cobro por ${cobrador}?`)) {
-    const res = await llamarAPI('actualizarPago', { index: index, cobrador: cobrador });
+    const res = await llamarAPI('actualizarPago', { index, cobrador });
     if(res?.success) cargarAdmin();
   }
 }
-
 async function reservaManualAdmin() {
   const fecha = document.getElementById('admin-reserva-fecha').value;
   const hora = document.getElementById('admin-reserva-hora').value;
   const cancha = document.getElementById('admin-reserva-cancha').value;
   const creador = document.getElementById('admin-usuario-creador').value;
-
   if(!fecha || !creador) return alert("Complete fecha y quién realiza la reserva");
-
-  const datos = {
-    fecha: fecha,
-    hora: hora,
-    duracion: 1, // Por defecto 1h en manual
-    cancha: cancha,
-    socioTitular: "ADMIN-" + creador, // Queda registrado quién la hizo
-    total: 0,
-    estado: "Abonada", // Las reservas manuales suelen marcarse como pagadas o bloqueadas
-    cobrador: creador
-  };
-
+  const datos = { fecha, hora, duracion: 1, cancha, socioTitular: "ADMIN-" + creador, total: 0, estado: "Abonada", cobrador: creador };
   const res = await llamarAPI('guardarReserva', { datos });
-  if(res?.success) {
-    alert("Horario bloqueado con éxito");
-    cargarAdmin();
-  }
+  if(res?.success) { alert("Horario bloqueado con éxito"); cargarAdmin(); }
 }
 </script>
 </body>
