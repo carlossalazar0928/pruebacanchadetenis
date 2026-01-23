@@ -378,19 +378,27 @@ select option[value=""] { color: #888; }
     }
   }
 
-  function generarCamposJugadores() {
-    const tipo = document.getElementById('reserva-tipo').value;
-    const container = document.getElementById('jugadores-container');
-    if(!tipo) { container.innerHTML = ""; return; }
-    container.innerHTML = "<p><b>Jugadores:</b></p>";
-    let cantidad = (tipo === 'single') ? 2 : 4;
-    for(let i=2; i<=cantidad; i++) {
-      container.innerHTML += `<div style="display:flex; gap:5px; margin-bottom:5px;">
-        <select class="tipo-jugador" onchange="actualizarInterfaz()" style="width:40%"><option value="socio">Socio</option><option value="nosocio">No Socio</option></select>
-        <input type="text" class="dato-jugador" placeholder="Nombre/Socio" style="width:60%">
+function generarCamposJugadores() {
+  const tipo = document.getElementById('reserva-tipo').value;
+  const container = document.getElementById('jugadores-container');
+  if(!tipo) { container.innerHTML = ""; return; }
+  
+  container.innerHTML = "<p><b>Jugadores adicionales (Obligatorio):</b></p>";
+  let cantidad = (tipo === 'single') ? 2 : 4;
+  
+  for(let i=2; i<=cantidad; i++) {
+    container.innerHTML += `
+      <div style="display:flex; gap:5px; margin-bottom:10px;">
+        <select class="tipo-jugador" onchange="actualizarInterfaz()" style="width:40%">
+          <option value="socio">Socio</option>
+          <option value="nosocio">No Socio</option>
+        </select>
+        <input type="text" class="dato-jugador" 
+               placeholder="Nombre y DNI del Jugador ${i} *" 
+               style="width:60%" required>
       </div>`;
-    }
   }
+}
 
   function calcularPrecio() {
     const horaVal = document.getElementById('reserva-hora').value;
@@ -407,24 +415,40 @@ select option[value=""] { color: #888; }
     return total;
   }
 
-  async function enviarReserva() {
-    const cancha = document.getElementById('reserva-cancha').value;
-    if(!cancha) return alert("Seleccione una cancha válida");
-    const fecha = document.getElementById('reserva-fecha').value;
-    const hora = document.getElementById('reserva-hora').value;
-    const duracion = document.getElementById('reserva-duracion').value;
-    const total = calcularPrecio();
-    let detalleJugadores = `${usuarioActual.nombre} (Titular)`;
-    document.querySelectorAll('.dato-jugador').forEach(inp => { if(inp.value) detalleJugadores += `, ${inp.value}`; });
-    const datos = { fecha, hora, duracion, cancha, socioTitular: usuarioActual.id, detalleJugadores, total };
-    const res = await llamarAPI('guardarReserva', { datos });
-    if(res?.success) {
-      document.getElementById('view-booking').classList.add('hidden');
-      document.getElementById('view-success').classList.remove('hidden');
-      const urlWA = `https://wa.me/5491130351121?text=Reserva: ${usuarioActual.nombre} - Cancha ${cancha} - Total $${total}`;
-      document.getElementById('resumen-final').innerHTML = `Detalle: Cancha ${cancha}, ${hora}:00hs. <br><br> <a href="${urlWA}" target="_blank" style="display:block; background:#25d366; color:white; padding:10px; text-align:center; text-decoration:none; border-radius:5px;">ENVIAR WHATSAPP</a>`;
+async function enviarReserva() {
+  const cancha = document.getElementById('reserva-cancha').value;
+  if(!cancha) return alert("Seleccione una cancha válida");
+
+  // --- NUEVA VALIDACIÓN DE JUGADORES ---
+  const inputsJugadores = document.querySelectorAll('.dato-jugador');
+  for (let inp of inputsJugadores) {
+    if (inp.value.trim() === "") {
+      return alert("Por favor, complete los datos de todos los jugadores para continuar.");
     }
   }
+  // -------------------------------------
+
+  const fecha = document.getElementById('reserva-fecha').value;
+  const hora = document.getElementById('reserva-hora').value;
+  const duracion = document.getElementById('reserva-duracion').value;
+  const total = calcularPrecio();
+  
+  let detalleJugadores = `${usuarioActual.nombre} (Titular)`;
+  // Recopilamos los datos ya validados
+  inputsJugadores.forEach(inp => { 
+    detalleJugadores += `, ${inp.value.trim()}`; 
+  });
+
+  const datos = { fecha, hora, duracion, cancha, socioTitular: usuarioActual.id, detalleJugadores, total };
+  const res = await llamarAPI('guardarReserva', { datos });
+  
+  if(res?.success) {
+    document.getElementById('view-booking').classList.add('hidden');
+    document.getElementById('view-success').classList.remove('hidden');
+    const urlWA = `https://wa.me/5491130351121?text=Reserva: ${usuarioActual.nombre} - Cancha ${cancha} - Total $${total}`;
+    document.getElementById('resumen-final').innerHTML = `Detalle: Cancha ${cancha}, ${hora}:00hs. <br><br> <a href="${urlWA}" target="_blank" style="display:block; background:#25d366; color:white; padding:10px; text-align:center; text-decoration:none; border-radius:5px;">ENVIAR WHATSAPP</a>`;
+  }
+}
 
   function showAdminLogin() {
     let pass = prompt("🔐 Ingrese la clave de administración:");
