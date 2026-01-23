@@ -158,12 +158,12 @@ select option[value=""] { color: #888; }
         </div>
       </div>
 
-      <label>Tipo de Juego</label>
-      <select id="reserva-tipo" onchange="actualizarInterfaz();">
-        <option value="" selected disabled>-- Seleccione --</option>
-        <option value="single">Single (2 Personas)</option>
-        <option value="doble">Dobles (4 Personas)</option>
-      </select>
+<label>Tipo de Juego</label>
+<select id="reserva-tipo" onchange="generarCamposJugadores(); actualizarInterfaz();">
+  <option value="" selected disabled>-- Seleccione --</option>
+  <option value="single">Single (2 Personas)</option>
+  <option value="doble">Dobles (4 Personas)</option>
+</select>
       
       <label>Seleccionar Cancha</label>
       <select id="reserva-cancha">
@@ -381,15 +381,21 @@ select option[value=""] { color: #888; }
 function generarCamposJugadores() {
   const tipo = document.getElementById('reserva-tipo').value;
   const container = document.getElementById('jugadores-container');
-  if(!tipo) { container.innerHTML = ""; return; }
   
+  if(!tipo) { 
+    container.innerHTML = ""; 
+    return; 
+  }
+  
+  // Solo generamos los campos si el contenedor está vacío o si cambió el tipo de juego
+  // Esto evita que se borre lo que el usuario ya escribió
   container.innerHTML = "<p><b>Jugadores adicionales (Obligatorio):</b></p>";
   let cantidad = (tipo === 'single') ? 2 : 4;
   
   for(let i=2; i<=cantidad; i++) {
     container.innerHTML += `
       <div style="display:flex; gap:5px; margin-bottom:10px;">
-        <select class="tipo-jugador" onchange="actualizarInterfaz()" style="width:40%">
+        <select class="tipo-jugador" onchange="calcularPrecio()" style="width:40%">
           <option value="socio">Socio</option>
           <option value="nosocio">No Socio</option>
         </select>
