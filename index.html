@@ -425,37 +425,55 @@ async function enviarReserva() {
   const cancha = document.getElementById('reserva-cancha').value;
   if(!cancha) return alert("Seleccione una cancha válida");
 
-  // --- NUEVA VALIDACIÓN DE JUGADORES ---
+  // Validación de jugadores obligatorios
   const inputsJugadores = document.querySelectorAll('.dato-jugador');
   for (let inp of inputsJugadores) {
     if (inp.value.trim() === "") {
       return alert("Por favor, complete los datos de todos los jugadores para continuar.");
     }
   }
-  // -------------------------------------
 
   const fecha = document.getElementById('reserva-fecha').value;
   const hora = document.getElementById('reserva-hora').value;
   const duracion = document.getElementById('reserva-duracion').value;
   const total = calcularPrecio();
   
+  // 1. Armamos la lista de jugadores para la base de datos y para WhatsApp
   let detalleJugadores = `${usuarioActual.nombre} (Titular)`;
-  // Recopilamos los datos ya validados
   inputsJugadores.forEach(inp => { 
     detalleJugadores += `, ${inp.value.trim()}`; 
   });
 
   const datos = { fecha, hora, duracion, cancha, socioTitular: usuarioActual.id, detalleJugadores, total };
+  
+  // 2. Guardamos en Google Sheets
   const res = await llamarAPI('guardarReserva', { datos });
   
   if(res?.success) {
     document.getElementById('view-booking').classList.add('hidden');
     document.getElementById('view-success').classList.remove('hidden');
-    const urlWA = `https://wa.me/5491130351121?text=Reserva: ${usuarioActual.nombre} - Cancha ${cancha} - Total $${total}`;
-    document.getElementById('resumen-final').innerHTML = `Detalle: Cancha ${cancha}, ${hora}:00hs. <br><br> <a href="${urlWA}" target="_blank" style="display:block; background:#25d366; color:white; padding:10px; text-align:center; text-decoration:none; border-radius:5px;">ENVIAR WHATSAPP</a>`;
+
+    // 3. Construimos el mensaje de WhatsApp con formato lindo
+    const mensajeWA = `🎾 *Nueva Reserva - Club Asturiano*
+*Socio:* ${usuarioActual.nombre}
+*Fecha:* ${fecha}
+*Hora:* ${hora}:00 hs (${duracion} hora/s)
+*Cancha:* ${cancha}
+*Jugadores:* ${detalleJugadores}
+*Total:* $${total}
+-----------------------------`;
+
+    // Usamos encodeURIComponent para que los espacios y símbolos no rompan el link
+    const urlWA = `https://wa.me/5491130351121?text=${encodeURIComponent(mensajeWA)}`;
+    
+    document.getElementById('resumen-final').innerHTML = `
+      <strong>Detalle:</strong> Cancha ${cancha}, ${hora}:00hs. <br>
+      <strong>Jugadores:</strong> ${detalleJugadores} <br><br>
+      <a href="${urlWA}" target="_blank" style="display:block; background:#25d366; color:white; padding:15px; text-align:center; text-decoration:none; border-radius:8px; font-weight:bold;">
+        📱 ENVIAR COMPROBANTE POR WHATSAPP
+      </a>`;
   }
 }
-
   function showAdminLogin() {
     let pass = prompt("🔐 Ingrese la clave de administración:");
     if (pass === "admin123") {
