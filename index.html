@@ -278,8 +278,15 @@ function actualizarInterfaz() {
 }
 
 function validarLunes(input) {
-  const hoy = new Date().toISOString().split('T')[0];
-  input.setAttribute('min', hoy);
+  const hoy = new Date();
+  const hoyStr = hoy.toISOString().split('T')[0];
+  
+  const maximo = new Date();
+  maximo.setDate(hoy.getDate() + 10);
+  const maxStr = maximo.toISOString().split('T')[0];
+
+  input.setAttribute('min', hoyStr);
+  input.setAttribute('max', maxStr); // Agregamos el máximo aquí también
 
   const fechaSeleccionada = new Date(input.value + 'T00:00:00');
   const diaSemana = fechaSeleccionada.getDay(); 
@@ -353,18 +360,34 @@ async function cargarCanchas() {
 
   let usuarioActual = "";
 
-  async function validarUsuario() {
-    const socio = document.getElementById('login-socio').value;
-    const fecha = document.getElementById('login-fecha').value;
-    if(!socio || !fecha) return alert("Complete los datos");
-    const res = await llamarAPI('validarSocio', { socio, fecha });
-    if (res && res.success) {
-        usuarioActual = { id: socio, nombre: res.nombre };
-        document.getElementById('view-login').classList.add('hidden');
-        document.getElementById('view-booking').classList.remove('hidden');
-        document.getElementById('welcome-msg').innerText = "Hola, " + res.nombre;
-        inicializarHoras();
-    } else { alert("Datos incorrectos"); }
+async function validarUsuario() {
+  const socio = document.getElementById('login-socio').value;
+  const fecha = document.getElementById('login-fecha').value;
+  if(!socio || !fecha) return alert("Complete los datos");
+
+  const res = await llamarAPI('validarSocio', { socio, fecha });
+  if (res && res.success) {
+      usuarioActual = { id: socio, nombre: res.nombre };
+      document.getElementById('view-login').classList.add('hidden');
+      document.getElementById('view-booking').classList.remove('hidden');
+      document.getElementById('welcome-msg').innerText = "Hola, " + res.nombre;
+      inicializarHoras();
+
+      // --- LÓGICA DE FECHAS LÍMITE ---
+      const hoy = new Date();
+      const hoyStr = hoy.toISOString().split('T')[0];
+      
+      const maximo = new Date();
+      maximo.setDate(hoy.getDate() + 10); // Sumamos 10 días
+      const maxStr = maximo.toISOString().split('T')[0];
+
+      const inputReserva = document.getElementById('reserva-fecha');
+      inputReserva.setAttribute('min', hoyStr); // No antes de hoy
+      inputReserva.setAttribute('max', maxStr); // No más de 10 días
+  } else { 
+      alert("Datos incorrectos"); 
+  }
+} }
     const hoy = new Date().toISOString().split('T')[0];
     document.getElementById('reserva-fecha').setAttribute('min', hoy);
   }
