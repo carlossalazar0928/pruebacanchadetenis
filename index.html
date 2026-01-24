@@ -186,51 +186,66 @@ select option[value=""] { color: #888; }
     <button onclick="location.reload()">Hacer otra reserva</button>
   </div>
 
-  <div id="view-admin" class="hidden">
-    <h2>Panel de Control - Administración</h2>
-    <div style="background: #f4f4f4; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ddd;">
-      <h3 style="margin-top:0; font-size: 1rem; color: var(--primary);">➕ Bloquear Turno / Reserva Manual</h3>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-        <input type="date" id="admin-reserva-fecha">
-        <select id="admin-reserva-hora"></select>
-        <select id="admin-reserva-cancha">
-          <option value="1">Cancha 1</option>
-          <option value="2">Cancha 2</option>
-          <option value="3">Cancha 3</option>
-          <option value="4">Cancha 4</option>
-          <option value="5">Cancha 5</option>
-          <option value="6">Cancha 6</option>
-        </select>
-        <select id="admin-usuario-creador">
-          <option value="">¿Quién reserva?</option>
-          <option value="Perso 1">Perso 1</option>
-          <option value="Perso 2">Perso 2</option>
-          <option value="Perso 3">Perso 3</option>
-          <option value="Perso 4">Perso 4</option>
-          <option value="Franquero">Franquero</option>
-        </select>
-      </div>
-      <button onclick="reservaManualAdmin()" style="margin-top:10px; padding: 10px; background: #444;">➕ Bloquear Turno / Reserva Manual</button>
+  <div style="background: #f4f4f4; padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 1px solid #ddd;">
+  <h3 style="margin-top:0; color: var(--primary);">🎾 Nueva Reserva Administrativa</h3>
+  
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+    <div>
+      <label>Fecha</label>
+      <input type="date" id="admin-reserva-fecha" onchange="actualizarCanchasAdmin()">
     </div>
-    <div id="admin-content" style="overflow-x:auto;">
-      <table id="admin-table">
-        <thead>
-          <tr>
-            <th>Fecha/Hora</th>
-            <th>Cancha</th>
-            <th>Socio</th>
-            <th>Estado</th>
-            <th>Cobrador</th>
-            <th>Acción</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+    <div>
+      <label>Hora Inicio</label>
+      <select id="admin-reserva-hora" onchange="actualizarCanchasAdmin()"></select>
     </div>
-    <button onclick="location.reload()" style="background:#666;">Cerrar Panel</button>
-  </div>
-</div>
+    <div>
+      <label>Duración</label>
+      <select id="admin-reserva-duracion" onchange="actualizarCanchasAdmin()">
+        <option value="1">1 Hora</option>
+        <option value="2">2 Horas</option>
+      </select>
+    </div>
+    <div>
+      <label>Cancha Disponible</label>
+      <select id="admin-reserva-cancha">
+        <option value="">-- Primero elija fecha/hora --</option>
+      </select>
+    </div>
 
+    <div>
+      <label>Nombre del Socio / Titular</label>
+      <input type="text" id="admin-socio-nombre" placeholder="Ej: Juan Pérez">
+    </div>
+    <div>
+      <label>WhatsApp del Socio (Sin +)</label>
+      <input type="number" id="admin-socio-tel" placeholder="54911...">
+    </div>
+
+    <div>
+      <label>Estado Inicial</label>
+      <select id="admin-reserva-estado">
+        <option value="Pendiente">Pendiente</option>
+        <option value="Abonada">Abonada</option>
+        <option value="No se presentó">No se presentó</option>
+      </select>
+    </div>
+    <div>
+      <label>Administrador que Registra</label>
+      <select id="admin-usuario-creador">
+        <option value="Perso 1">Perso 1</option>
+        <option value="Perso 2">Perso 2</option>
+        <option value="Perso 3">Perso 3</option>
+        <option value="Perso 4">Perso 4</option>
+        <option value="Franquero">Franquero</option>
+      </select>
+    </div>
+  </div>
+
+  <label>Jugadores Adicionales (Opcional)</label>
+  <textarea id="admin-jugadores-detalle" placeholder="Ej: Socio 123, Invitado Pepe..." style="width:100%; height:60px; border-radius:8px; border:1px solid #ddd; padding:10px;"></textarea>
+
+  <button onclick="reservaManualAdmin()" style="background: var(--primary); margin-top:15px;">Confirmar y Generar WhatsApp</button>
+</div>
 <script>
   // Máscara de fecha (mejorada para que no falle)
   const inputFecha = document.getElementById('login-fecha');
@@ -525,6 +540,83 @@ async function enviarReserva() {
     const res = await llamarAPI('guardarReserva', { datos });
     if(res?.success) { alert("Horario bloqueado con éxito"); cargarAdmin(); }
   }
+  // 1. Verificar disponibilidad igual que los socios
+async function actualizarCanchasAdmin() {
+    const fecha = document.getElementById('admin-reserva-fecha').value;
+    const horaInicio = parseInt(document.getElementById('admin-reserva-hora').value);
+    const duracion = parseInt(document.getElementById('admin-reserva-duracion').value);
+    const select = document.getElementById('admin-reserva-cancha');
+
+    if (!fecha || !horaInicio) return;
+
+    select.innerHTML = '<option value="">Verificando...</option>';
+    const ocupadas = await llamarAPI('obtenerDisponibilidad', { fechaStr: fecha });
+    
+    // Determinamos límite de canchas según día (6 finde, 2 semana)
+    const dia = new Date(fecha + 'T00:00:00').getDay();
+    let limiteCanchas = (dia === 0 || dia === 6) ? 6 : 2;
+    let html = '<option value="">-- Seleccione Cancha --</option>';
+    let libres = 0;
+
+    for (let i = 1; i <= limiteCanchas; i++) {
+        let estaOcupada = ocupadas?.some(r => {
+            if (parseInt(r.cancha) !== i) return false;
+            let rHoraFin = parseInt(r.hora) + parseInt(r.duracion || 1);
+            return (horaInicio < rHoraFin && (horaInicio + duracion) > parseInt(r.hora));
+        });
+
+        if (!estaOcupada) {
+            html += `<option value="${i}">Cancha ${i}</option>`;
+            libres++;
+        }
+    }
+    select.innerHTML = libres > 0 ? html : '<option value="">❌ Todo ocupado</option>';
+}
+
+// 2. Guardar y enviar WhatsApp
+async function reservaManualAdmin() {
+    const fields = {
+        fecha: document.getElementById('admin-reserva-fecha').value,
+        hora: document.getElementById('admin-reserva-hora').value,
+        duracion: document.getElementById('admin-reserva-duracion').value,
+        cancha: document.getElementById('admin-reserva-cancha').value,
+        nombre: document.getElementById('admin-socio-nombre').value,
+        tel: document.getElementById('admin-socio-tel').value,
+        estado: document.getElementById('admin-reserva-estado').value,
+        admin: document.getElementById('admin-usuario-creador').value,
+        detalle: document.getElementById('admin-jugadores-detalle').value
+    };
+
+    if (!fields.fecha || !fields.cancha || !fields.nombre) {
+        return alert("Complete Fecha, Cancha y Nombre del Socio");
+    }
+
+    const datos = { 
+        fecha: fields.fecha, 
+        hora: fields.hora, 
+        duracion: fields.duracion, 
+        cancha: fields.cancha, 
+        socioTitular: "ADMIN-" + fields.nombre, 
+        detalleJugadores: fields.detalle || "Sin acompañantes",
+        total: 0, // El admin puede dejarlo en 0 o calcularlo
+        estado: fields.estado,
+        cobrador: fields.admin
+    };
+
+    const res = await llamarAPI('guardarReserva', { datos });
+    
+    if (res?.success) {
+        alert("✅ Reserva guardada con éxito.");
+        
+        // Si hay teléfono, preparar el WhatsApp para el socio
+        if (fields.tel) {
+            const msj = `🎾 *Reserva Club Asturiano*\nHola ${fields.nombre}, confirmamos tu turno:\n📅 *Fecha:* ${fields.fecha}\n⏰ *Hora:* ${fields.hora}:00 hs\n🏟️ *Cancha:* ${fields.cancha}\n📌 *Estado:* ${fields.estado}\n¡Te esperamos!`;
+            window.open(`https://wa.me/${fields.tel}?text=${encodeURIComponent(msj)}`, '_blank');
+        }
+        
+        cargarAdmin(); // Recargar la tabla
+    }
+}
 </script>
 </body>
 </html>
