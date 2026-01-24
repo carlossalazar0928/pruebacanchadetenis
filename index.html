@@ -573,6 +573,39 @@ async function actualizarCanchasAdmin() {
     select.innerHTML = libres > 0 ? html : '<option value="">❌ Todo ocupado</option>';
 }
 
+// 1. Verificar disponibilidad igual que los socios
+async function actualizarCanchasAdmin() {
+    const fecha = document.getElementById('admin-reserva-fecha').value;
+    const horaInicio = parseInt(document.getElementById('admin-reserva-hora').value);
+    const duracion = parseInt(document.getElementById('admin-reserva-duracion').value);
+    const select = document.getElementById('admin-reserva-cancha');
+
+    if (!fecha || !horaInicio) return;
+
+    select.innerHTML = '<option value="">Verificando...</option>';
+    const ocupadas = await llamarAPI('obtenerDisponibilidad', { fechaStr: fecha });
+    
+    // Determinamos límite de canchas según día (6 finde, 2 semana)
+    const dia = new Date(fecha + 'T00:00:00').getDay();
+    let limiteCanchas = (dia === 0 || dia === 6) ? 6 : 2;
+    let html = '<option value="">-- Seleccione Cancha --</option>';
+    let libres = 0;
+
+    for (let i = 1; i <= limiteCanchas; i++) {
+        let estaOcupada = ocupadas?.some(r => {
+            if (parseInt(r.cancha) !== i) return false;
+            let rHoraFin = parseInt(r.hora) + parseInt(r.duracion || 1);
+            return (horaInicio < rHoraFin && (horaInicio + duracion) > parseInt(r.hora));
+        });
+
+        if (!estaOcupada) {
+            html += `<option value="${i}">Cancha ${i}</option>`;
+            libres++;
+        }
+    }
+    select.innerHTML = libres > 0 ? html : '<option value="">❌ Todo ocupado</option>';
+}
+
 // 2. Guardar y enviar WhatsApp
 async function reservaManualAdmin() {
     const fields = {
