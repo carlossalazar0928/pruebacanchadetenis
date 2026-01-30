@@ -297,8 +297,8 @@ td { border-bottom: 1px solid #eee; padding: 8px; }
     const h = parseInt(document.getElementById('reserva-hora').value) || 0;
     const d = parseInt(document.getElementById('reserva-duracion').value) || 1;
     if(!h) return;
-    let baseSocio = h < 18 ? 1000 : 1500;
-    let baseInvitado = h < 18 ? 2000 : 2500;
+    let baseSocio = h < 18 ? 2000 : 3300;
+    let baseInvitado = h < 18 ? 9000 : 11000;
     let total = baseSocio * d;
     document.querySelectorAll('.tipo-jugador').forEach(s => total += (s.value === 'socio' ? baseSocio : baseInvitado) * d);
     document.getElementById('precio-total').innerText = "Total: $" + total;
