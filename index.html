@@ -223,19 +223,41 @@ td { border-bottom: 1px solid #eee; padding: 8px; }
   async function validarUsuario() {
     const socio = document.getElementById('login-socio').value;
     const fecha = document.getElementById('login-fecha').value;
+    
+    // Llamada a la API
     const res = await llamarAPI('validarSocio', { socio, fecha });
+    
     if (res?.success) {
       usuarioActual = { id: socio, nombre: res.nombre };
       
-      // Fecha min (Hoy)
-      const hoy = new Date().toISOString().split('T')[0];
-      document.getElementById('reserva-fecha').setAttribute('min', hoy);
+      // --- LÓGICA DE FECHAS (NUEVO) ---
+      const fechaActual = new Date();
+      
+      // 1. Calcular fecha de hoy para el MIN (no reservar en el pasado)
+      // Ajustamos a zona horaria local para evitar problemas con UTC
+      const hoy = new Date(fechaActual.getTime() - (fechaActual.getTimezoneOffset() * 60000))
+                    .toISOString().split('T')[0];
+      
+      // 2. Calcular fecha límite (Hoy + 10 días) para el MAX
+      const fechaLimite = new Date(fechaActual);
+      fechaLimite.setDate(fechaActual.getDate() + 10);
+      const maximo = new Date(fechaLimite.getTime() - (fechaLimite.getTimezoneOffset() * 60000))
+                     .toISOString().split('T')[0];
+
+      // 3. Aplicar restricciones SOLO al input del socio
+      const inputSocio = document.getElementById('reserva-fecha');
+      inputSocio.setAttribute('min', hoy);
+      inputSocio.setAttribute('max', maximo);
+      
+      // --------------------------------
 
       document.getElementById('view-login').classList.add('hidden');
       document.getElementById('view-booking').classList.remove('hidden');
       document.getElementById('welcome-msg').innerText = "Hola, " + res.nombre;
       inicializarHoras('reserva-hora');
-    } else alert("Datos incorrectos");
+    } else {
+      alert("Datos incorrectos. Verifique su número de socio y fecha de nacimiento.");
+    }
   }
 
   function inicializarHoras(idSelect) {
