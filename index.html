@@ -119,24 +119,22 @@ td { border-bottom: 1px solid #eee; padding: 8px; }
   <div id="view-booking" class="hidden">
     <h2 id="welcome-msg">Hola Socio</h2>
     <label>Fecha</label>
-    <input type="date" id="reserva-fecha" onchange="validarLunes(this); actualizarInterfaz();">
+    <input type="date" id="reserva-fecha" onchange="validarLunes(this); actualizarInterfaz();" onkeydown="return false">
     
     <div id="config-area" class="hidden">
-      <div style="display:flex; gap:10px;">
-        <div style="flex:1;"><label>Inicio</label><select id="reserva-hora" onchange="actualizarInterfaz()"></select></div>
-        <div style="flex:1;"><label>Duración</label><select id="reserva-duracion" onchange="actualizarInterfaz()">
-          <option value="1">1 Hora</option>
-          <option value="2">2 Horas</option>
-        </select></div>
-      </div>
+      <label>Horario de Inicio</label>
+      <select id="reserva-hora" onchange="actualizarInterfaz()"></select>
+
       <label>Tipo de Juego</label>
-      <select id="reserva-tipo" onchange="generarCamposJugadores(); calcularPrecio();">
+      <select id="reserva-tipo" onchange="generarCamposJugadores(); actualizarInterfaz();">
         <option value="" disabled selected>-- Elija --</option>
-        <option value="single">Single</option>
-        <option value="doble">Dobles</option>
+        <option value="single">Single (1 Hora)</option>
+        <option value="doble">Dobles (2 Horas)</option>
       </select>
+
       <label>Cancha</label>
-      <select id="reserva-cancha"><option value="">-- Verificando --</option></select>
+      <select id="reserva-cancha"><option value="">-- Primero seleccione hora y tipo --</option></select>
+      
       <div id="jugadores-container"></div>
       <div id="precio-total" style="background:var(--accent); padding:10px; text-align:center; font-weight:900; margin-top:15px; border-radius:8px;">Total: $0</div>
       <button onclick="enviarReserva()">Confirmar Reserva</button>
@@ -228,6 +226,11 @@ td { border-bottom: 1px solid #eee; padding: 8px; }
     const res = await llamarAPI('validarSocio', { socio, fecha });
     if (res?.success) {
       usuarioActual = { id: socio, nombre: res.nombre };
+      
+      // Fecha min (Hoy)
+      const hoy = new Date().toISOString().split('T')[0];
+      document.getElementById('reserva-fecha').setAttribute('min', hoy);
+
       document.getElementById('view-login').classList.add('hidden');
       document.getElementById('view-booking').classList.remove('hidden');
       document.getElementById('welcome-msg').innerText = "Hola, " + res.nombre;
@@ -237,7 +240,7 @@ td { border-bottom: 1px solid #eee; padding: 8px; }
 
   function inicializarHoras(idSelect) {
     const select = document.getElementById(idSelect);
-    select.innerHTML = '<option value="" disabled selected>-- Horarios --</option>';
+    select.innerHTML = '<option value="">-- Seleccione Hora --</option>'; // Inicio Vacío
     for(let i=7; i<=21; i++) {
       let opt = document.createElement('option');
       opt.value = i; opt.text = i + ":00 hs";
@@ -246,38 +249,81 @@ td { border-bottom: 1px solid #eee; padding: 8px; }
   }
 
   function validarLunes(input) {
-    if (new Date(input.value + 'T00:00:00').getDay() === 1) {
+    const fechaSeleccionada = new Date(input.value + 'T00:00:00');
+    if (fechaSeleccionada.getDay() === 1) {
       alert("Lunes cerrado por mantenimiento.");
       input.value = "";
       document.getElementById('config-area').classList.add('hidden');
-    } else document.getElementById('config-area').classList.remove('hidden');
+    } else {
+      document.getElementById('config-area').classList.remove('hidden');
+    }
+  }
+
+  // --- NUEVA LÓGICA DE DURACIÓN AUTOMÁTICA ---
+  function obtenerDuracionAutomatica() {
+    const tipo = document.getElementById('reserva-tipo').value;
+    if (tipo === 'doble') return 2; // Dobles = 2 horas
+    if (tipo === 'single') return 1; // Single = 1 hora
+    return 1; // Por defecto
   }
 
   async function actualizarInterfaz() {
     const f = document.getElementById('reserva-fecha').value;
     const h = document.getElementById('reserva-hora').value;
-    const d = document.getElementById('reserva-duracion').value;
-    if(f && h && d) cargarCanchas(f, h, d, 'reserva-cancha');
+    const tipo = document.getElementById('reserva-tipo').value;
+    
+    // Si falta algo, no cargamos canchas
+    if(!f || !h || !tipo) {
+        document.getElementById('reserva-cancha').innerHTML = '<option value="">-- Complete fecha, hora y tipo --</option>';
+        return;
+    }
+
+    const d = obtenerDuracionAutomatica();
+    cargarCanchas(f, h, d, 'reserva-cancha');
+    calcularPrecio(); // Recalcular precio también
   }
 
   async function cargarCanchas(fecha, hora, duracion, idSelect) {
     const select = document.getElementById(idSelect);
-    select.innerHTML = '<option value="">Cargando...</option>';
+    
+    if(!hora) return; // Doble chequeo
+
+    select.innerHTML = '<option value="">Verificando disponibilidad...</option>';
     const ocupadas = await llamarAPI('obtenerDisponibilidad', { fechaStr: fecha });
+    
     const dia = new Date(fecha + 'T00:00:00').getDay();
     const limite = (dia === 0 || dia === 6) ? 6 : 2;
-    let html = '<option value="">-- Seleccione --</option>';
+    
+    let html = '<option value="">-- Seleccione Cancha --</option>';
     let count = 0;
     
+    // Convertir a números para comparar
+    const hInicio = parseInt(hora);
+    const hFin = hInicio + parseInt(duracion);
+
     for (let i = 1; i <= limite; i++) {
       let ocupada = ocupadas?.some(r => {
         if (parseInt(r.cancha) !== i) return false;
-        let rFin = parseInt(r.hora) + parseInt(r.duracion || 1);
-        return (parseInt(hora) < rFin && (parseInt(hora) + parseInt(duracion)) > parseInt(r.hora));
+        let rInicio = parseInt(r.hora);
+        let rDur = parseInt(r.duracion || 1);
+        let rFin = rInicio + rDur;
+        
+        // Colisión de horarios: (NuevoInicio < ViejoFin) y (NuevoFin > ViejoInicio)
+        return (hInicio < rFin && hFin > rInicio);
       });
-      if (!ocupada) { html += `<option value="${i}">Cancha ${i}</option>`; count++; }
+
+      if (!ocupada) { 
+        html += `<option value="${i}">Cancha ${i}</option>`; 
+        count++; 
+      }
     }
-    select.innerHTML = count > 0 ? html : '<option value="">❌ Sin lugar</option>';
+    
+    if (count === 0) {
+        alert("⚠️ No hay canchas disponibles para " + duracion + " hora(s) en ese horario.");
+        select.innerHTML = '<option value="">❌ Sin lugar</option>';
+    } else {
+        select.innerHTML = html;
+    }
   }
 
   function generarCamposJugadores() {
@@ -291,16 +337,33 @@ td { border-bottom: 1px solid #eee; padding: 8px; }
         <input type="text" class="dato-jugador" placeholder="Nombre y DNI" style="width:65%" required>
       </div>`;
     }
+    // IMPORTANTE: Al cambiar el tipo, también se actualiza la interfaz (duración)
+    // Esto ya se llama desde el onchange del HTML, pero calcularPrecio se llama abajo
+    calcularPrecio();
   }
 
   function calcularPrecio() {
     const h = parseInt(document.getElementById('reserva-hora').value) || 0;
-    const d = parseInt(document.getElementById('reserva-duracion').value) || 1;
+    const d = obtenerDuracionAutomatica(); // Usamos la automática
+    
     if(!h) return;
+    
+    // Precios Base por HORA (ajustar si tus precios base son por bloque completo)
+    // Asumo que estos precios son POR HORA según tu código anterior (base * d)
     let baseSocio = h < 18 ? 2000 : 3300;
-    let baseInvitado = h < 18 ? 9000 : 11000;
-    let total = baseSocio * d;
-    document.querySelectorAll('.tipo-jugador').forEach(s => total += (s.value === 'socio' ? baseSocio : baseInvitado) * d);
+    let baseInvitado = h < 18 ? 9000 : 11000; // Invitado PAGA cancha completa precio invitado?
+    
+    // Ojo: En muchos clubes el socio paga su parte y el invitado la suya.
+    // Tu lógica original sumaba al "Socio Titular" y luego a cada "Invitado".
+    // Mantenemos tu lógica:
+    
+    let total = baseSocio * d; // Costo del titular por la duración
+    
+    document.querySelectorAll('.tipo-jugador').forEach(s => {
+        // Sumamos costo de cada acompañante multiplicado por la duración
+        total += (s.value === 'socio' ? baseSocio : baseInvitado) * d;
+    });
+    
     document.getElementById('precio-total').innerText = "Total: $" + total;
     return total;
   }
@@ -308,13 +371,16 @@ td { border-bottom: 1px solid #eee; padding: 8px; }
   async function enviarReserva() {
     const c = document.getElementById('reserva-cancha').value;
     if(!c) return alert("Elija cancha");
+    
     const inputs = document.querySelectorAll('.dato-jugador');
     for(let i of inputs) if(!i.value.trim()) return alert("Complete todos los jugadores");
+
+    const duracionAuto = obtenerDuracionAutomatica();
 
     const datos = {
       fecha: document.getElementById('reserva-fecha').value,
       hora: document.getElementById('reserva-hora').value,
-      duracion: document.getElementById('reserva-duracion').value,
+      duracion: duracionAuto, // Enviamos la calculada
       cancha: c,
       socioTitular: usuarioActual.id,
       detalleJugadores: Array.from(inputs).map(i => i.value).join(', '),
@@ -329,7 +395,7 @@ td { border-bottom: 1px solid #eee; padding: 8px; }
     document.getElementById('view-booking').classList.add('hidden');
     document.getElementById('view-admin').classList.add('hidden');
     document.getElementById('view-success').classList.remove('hidden');
-    const txt = `Cancha ${d.cancha} | ${d.fecha} | ${d.hora}hs. Total: $${d.total}`;
+    const txt = `Cancha ${d.cancha} | ${d.fecha} | ${d.hora}hs (${d.duracion}h). Total: $${d.total}`;
     const url = `https://wa.me/5491130351121?text=${encodeURIComponent("Reserva: "+txt)}`;
     document.getElementById('resumen-final').innerHTML = `${txt}<br><br><a href="${url}" target="_blank" style="display:block; background:#25d366; color:white; padding:10px; text-align:center; text-decoration:none; border-radius:5px;">ENVIAR WHATSAPP</a>`;
   }
@@ -337,13 +403,28 @@ td { border-bottom: 1px solid #eee; padding: 8px; }
   // --- ADMIN FUNCTIONS ---
 
   function showAdminLogin() {
-    if(prompt("Clave:") === "admin123") {
-      document.getElementById('view-login').classList.add('hidden');
-      document.querySelector('.container').classList.add('admin-mode');
-      document.getElementById('view-admin').classList.remove('hidden');
-      inicializarHoras('admin-reserva-hora');
-      cargarAdmin();
-    }
+    setTimeout(() => {
+        let pass = prompt("🔐 Ingrese la clave de administración:");
+        if (pass === null) return; 
+
+        if (pass === "admin123") { 
+            document.getElementById('view-login').classList.add('hidden');
+            document.querySelector('.container').classList.add('admin-mode');
+            document.getElementById('view-admin').classList.remove('hidden');
+            
+            // Inicializar horas admin
+            const adminHora = document.getElementById('admin-reserva-hora');
+            adminHora.innerHTML = "";
+            for(let i=7; i<=21; i++) {
+                let opt = document.createElement('option');
+                opt.value = i; opt.text = i + ":00 hs";
+                adminHora.appendChild(opt);
+            }
+            cargarAdmin();
+        } else {
+            alert("❌ Contraseña incorrecta");
+        }
+    }, 100);
   }
 
   async function actualizarCanchasAdmin() {
@@ -377,7 +458,7 @@ td { border-bottom: 1px solid #eee; padding: 8px; }
     const res = await llamarAPI('guardarReserva', { datos });
     if(res?.success) {
       if(f.tel) {
-        const msj = `🎾 *Club Asturiano*\nHola ${f.nom}, reserva confirmada:\n📅 ${f.fecha}\n⏰ ${f.hora}:00hs\n🏟️ Cancha ${f.can}\n📌 Estado: ${f.est}`;
+        const msj = `🎾 *Club Asturiano*\nHola ${f.nom}, reserva confirmada:\n📅 ${f.fecha}\n⏰ ${f.hora}:00hs\n⏱️ ${f.dur}hs\n🏟️ Cancha ${f.can}\n📌 Estado: ${f.est}`;
         window.open(`https://wa.me/${f.tel}?text=${encodeURIComponent(msj)}`, '_blank');
       }
       alert("Guardado"); cargarAdmin();
@@ -388,28 +469,46 @@ td { border-bottom: 1px solid #eee; padding: 8px; }
     const res = await llamarAPI('obtenerReservasAdmin');
     const tbody = document.querySelector('#admin-table tbody');
     tbody.innerHTML = "";
-    if(!res) return;
+    if(!res || res.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='6' style='text-align:center'>No hay reservas</td></tr>";
+        return;
+    }
+    
+    // Invertir para ver lo más reciente arriba
     res.reverse().forEach((r, i) => {
+      // Calculamos el índice real para enviarlo al script de Google (porque invertimos el array)
       const indexReal = res.length - 1 - i;
+      
       const estado = r[9] || "Pendiente";
+      const cobrador = r[10] || "-";
       let clase = "status-pendiente";
       if(estado === "Abonada") clase = "status-pagado";
       if(estado === "No se presentó") clase = "status-noshow";
 
       tbody.innerHTML += `<tr>
-        <td>${r[1]}<br>${r[2]}hs</td>
+        <td>${r[1]}<br>${r[2]}hs (${r[3]}h)</td>
         <td>Cancha ${r[4]}</td>
-        <td><strong>${r[7]}</strong><br><small>${r[6]}</small></td>
+        <td><strong>${r[6]}</strong><br><small>${r[7]}</small></td>
         <td><span class="status-badge ${clase}">${estado}</span></td>
-        <td>${estado !== "Abonada" ? `<select onchange="cobrarReserva(${indexReal}, this.value)"><option value="">Cobrar...</option><option value="Perso 1">Fernanda</option><option value="Perso 2">Gustavo</option><option value="Perso 3">Denise</option><option value="Franquero">Franquero</option></select>` : "✅"}</td>
+        <td>${estado !== "Abonada" ? 
+            `<select onchange="cobrarReserva(${indexReal}, this.value)" style="font-size:0.7rem;">
+                <option value="">Cobrar...</option>
+                <option value="Perso 1">Fernanda</option>
+                <option value="Perso 2">Gustavo</option>
+                <option value="Perso 3">Denise</option>
+                <option value="Franquero">Franquero</option>
+             </select>` : `✅ ${cobrador}`}
+        </td>
       </tr>`;
     });
   }
 
   async function cobrarReserva(idx, admin) {
     if(!admin) return;
-    const res = await llamarAPI('actualizarPago', { index: idx, cobrador: admin });
-    if(res?.success) cargarAdmin();
+    if(confirm(`¿Confirmar cobro por ${admin}?`)) {
+        const res = await llamarAPI('actualizarPago', { index: idx, cobrador: admin });
+        if(res?.success) cargarAdmin();
+    }
   }
 </script>
 </body>
